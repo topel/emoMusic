@@ -20,34 +20,14 @@ X_ = load_X(DATADIR, song_id)
 # We need to separate PER SONG
 X_train, y_train, X_test, y_test, song_id_tst = mix(X_, y_, PURCENT, NUM_FRAMES, song_id, nb_of_songs)
 print X_train.shape, y_train.shape, X_test.shape, y_test.shape
-# print X_train[0:3,0:3]
-# print np.mean(X_train[:,0:3], axis=0), np.std(X_train[:,0:3], axis=0)
-# print np.mean(X_test[:,0:3], axis=0), np.std(X_test[:,0:3], axis=0)
-
-# with(open('train_dummy.txt', mode='w')) as infile:
-#     for i in range(X_train.shape[0]):
-#         s=''
-#         for feat in range(3):
-#             s = s + '%g '%X_train[i,feat]
-#         infile.write('%s\n'%s)
 
 # standardize data
 X_train, scaler = standardize(X_train)
 X_test, _ = standardize(X_test, scaler)
 
-# print np.mean(X_train[:,0:3], axis=0), np.std(X_train[:,0:3], axis=0)
-# print np.mean(X_test[:,0:3], axis=0), np.std(X_test[:,0:3], axis=0)
-
-# with(open('train_dummy_normed.txt', mode='w')) as infile:
-#     for i in range(X_train.shape[0]):
-#         s=''
-#         for feat in range(3):
-#             s = s + '%g '%X_train[i,feat]
-#         infile.write('%s\n'%s)
-
 # one dimension at a time
-y_train = y_train[:,0]
-y_test = y_test[:,0]
+# y_train = y_train[:,0]
+# y_test = y_test[:,0]
 
 print X_train.shape, y_train.shape, X_test.shape, y_test.shape
 
@@ -59,38 +39,65 @@ print X_train.shape
 # print X_train[0:10]
 
 # Theano symbolic definitions
-X = T.vector()
-Y = T.scalar()
-lr = T.scalar('learning rate')
-regul = T.scalar('L2 regul. coeff')
 
-def model(X, w):
-    return T.dot(X, w)
+def floatX(X):
+    return np.asarray(X, dtype=theano.config.floatX)
+
+def init_weights(shape):
+    return theano.shared(floatX(np.random.randn(*shape) * 0.01))
+
+def sgd(cost, params, lr=0.05):
+    grads = T.grad(cost=cost, wrt=params)
+    updates = []
+    for p, g in zip(params, grads):
+        updates.append([p, p - g * lr])
+    return updates
+
+def model(X, w_h, w_o):
+    h = T.nnet.sigmoid(T.dot(X, w_h))
+    # pyx = T.nnet.softmax(T.dot(h, w_o))
+    y = T.tanh(T.dot(h, w_o))
+    return y
+
+
+X = T.fmatrix()
+Y = T.fmatrix()
 
 nb_features = X_train.shape[1]
 print 'nb_feat: ', nb_features
-w = theano.shared(np.zeros(nb_features, dtype=theano.config.floatX))
+nb_hidden = 10
+nb_output = 2
+# w_h = init_weights((nb_features, nb_output))
+w_h = init_weights((nb_features, nb_hidden))
+w_o = init_weights((nb_hidden, nb_output))
 
-y = model(X, w)
+
+y = model(X, w_h, w_o)
+
+lr = T.scalar('learning rate')
+regul = T.scalar('L2 regul. coeff')
 
 if do_regularize:
     # linear cost w regul
     # cost = T.mean(T.sqr(y - Y)) + regul * T.dot(w, w)
     # quadratic cost w regul
-    cost = T.mean(T.sqr(T.dot(y - Y, y - Y))) + regul * T.dot(w, w)
+    cost = T.mean(T.sqr(T.dot(y - Y, (y - Y).T))) + regul * (T.dot(w_h, w_h.T) + T.dot(w_o, w_o.T))
 else:
     # linear cost
     # cost = T.mean(T.sqr(y - Y))
     # quadratic cost
-    cost = T.mean(T.sqr(T.dot(y - Y, y - Y)))
+    cost = T.mean(T.sqr(T.dot(y - Y, (y - Y).T)))
 
-gradient = T.grad(cost=cost, wrt=w)
-updates = [[w, w - gradient * lr]]
+params = [w_h, w_o]
+# params = [w_h]
+updates = sgd(cost, params, lr)
+
+predict = theano.function(inputs=[X], outputs=y, allow_input_downcast=True)
 
 if do_regularize:
     train = theano.function(inputs=[X, Y, lr, regul], outputs=cost, updates=updates, allow_input_downcast=True)
 else:
-    train = theano.function(inputs=[X, Y, lr], outputs=cost, updates=updates, allow_input_downcast=True)
+    train = theano.function(inputs=[X, Y, lr], outputs=cost, updates=updates, allow_input_downcast=True, mode='DebugMode')
 
 predict = theano.function(inputs=[X], outputs=y, allow_input_downcast=True)
 
@@ -98,60 +105,52 @@ predict = theano.function(inputs=[X], outputs=y, allow_input_downcast=True)
 print '... Training ...'
 print ' REGULRAIZE: ', do_regularize
 
-nb_iterations = 150
+nb_iterations = 10
+minibatch_size = 10
 # clr = 1e-15
-clr = 1e-6
+clr = 1e-3
 # lr_decay = 0.9
 lr_decay = 1.0
-# here we test several regul coeffs
-regul_coeff_start = 1e-7
+regul_coeff_start = 5e-1
 regul_coeff = regul_coeff_start
-# regul_multiplier = 5
 
 hlr = list()
 hcost = list()
 
 if do_regularize:
+
     for i in range(nb_iterations):
-        print '... it: %d'%i
         ccost = list()
         hlr.append(clr)
         # print 'i:', i, 'w:', w.get_value()
-        ind_it=1
-        for cx, cy in zip(X_train, y_train):
-            c = train(cx, cy, clr, regul_coeff)
+        for start, end in zip(range(0, len(X_train), minibatch_size), range(minibatch_size, len(X_train), minibatch_size)):
+            c = train(X_train[start:end], y_train[start:end], clr, regul_coeff)
             ccost.append(c)
-            print cx[0:3], cy, c
-            if ind_it % 100 == 0:
-                break
-            ind_it += 1
         hcost.append(np.mean(ccost))
+        print '    ... it: %d cost: %g'%(i, hcost[-1])
         lr *= lr_decay
-
-        plt.plot(ccost)
-        plt.show()
-
+        # plt.plot(ccost)
+        # plt.show()
 else:
     for i in range(nb_iterations):
         ccost = list()
         hlr.append(clr)
         # print 'i:', i, 'w:', w.get_value()
-        ind_it=1
-        for cx, cy in zip(X_train, y_train):
-            c = train(cx, cy, clr)
+        for start, end in zip(range(0, len(X_train), minibatch_size), range(minibatch_size, len(X_train), minibatch_size)):
+            x_ =  X_train[start:end,:]
+            y_ = y_train[start:end]
+            # print x_.shape, y_.shape
+            # print x_
+            # print y_
+            c = train(X_train[start:end,:], y_train[start:end], clr)
             ccost.append(c)
-            # print cx[0:3], cy, c
-            # if ind_it % 100 == 0:
-            #     break
-            ind_it += 1
         hcost.append(np.mean(ccost))
         print '    ... it: %d cost: %g'%(i, hcost[-1])
-
         lr *= lr_decay
         # plt.plot(ccost)
         # plt.show()
 
-W = w.get_value()
+
 # print 'train: regul=%g finalCost=%g'%(regul_coeff, hcost[-1])
 print '... finalCost=%g'%(hcost[-1])
 # print W
@@ -178,13 +177,14 @@ print '... predicting ...'
 # add column of ones to data to account for the bias:
 X_test = add_intercept(X_test)
 print X_test.shape
-pred = list()
-for cx in X_test:
-    pred.append(predict(cx))
+# pred = list()
+# for cx in X_test:
+#     pred.append(predict(cx))
+# y_hat = np.array(pred, dtype=float)
+y_hat = predict(X_test)
 
-y_hat = np.array(pred, dtype=float)
-
-RMSE, pcorr, error_per_song, mean_per_song = evaluate1d(y_test, y_hat, tst_song)
+# RMSE, pcorr, error_per_song, mean_per_song = evaluate1d(y_test, y_hat, tst_song)
+RMSE, pcorr, error_per_song, mean_per_song = evaluate(y_test, y_hat, tst_song)
 
 All_stack =np.hstack(( error_per_song, mean_per_song ))
 print'  Error per song (ar/val)  Mean_per_song (ar/val)    :\n'
@@ -199,6 +199,5 @@ print '\n'
 print(
         'sklearn --> arrousal : %.4f, valence : %.4f\n'
         'Pearson Corr --> arrousal : %.4f, valence : %.4f \n'
-        % (RMSE[0], -1. , pcorr[0][0], -1)
-      # % (RMSE[0],RMSE[1],pcorr[0][0], pcorr[1][0])
+        % (RMSE[0], RMSE[1], pcorr[0][0], pcorr[1][0])
 )

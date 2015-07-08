@@ -11,7 +11,7 @@ NUM_FRAMES = 60
 DATADIR = '/baie/corpus/emoMusic/train/'
 # DATADIR = './train/'
 
-do_regularize = False
+do_regularize = True
 
 y_, song_id, nb_of_songs = load_y(DATADIR)
 X_ = load_X(DATADIR, song_id)
@@ -64,8 +64,11 @@ Y = T.scalar()
 lr = T.scalar('learning rate')
 regul = T.scalar('L2 regul. coeff')
 
+# def model(X, w):
+#     return 2.0*T.nnet.sigmoid(T.dot(X, w))-1.0
+
 def model(X, w):
-    return T.dot(X, w)
+    return T.tanh(T.dot(X, w))
 
 nb_features = X_train.shape[1]
 print 'nb_feat: ', nb_features
@@ -98,22 +101,19 @@ predict = theano.function(inputs=[X], outputs=y, allow_input_downcast=True)
 print '... Training ...'
 print ' REGULRAIZE: ', do_regularize
 
-nb_iterations = 150
+nb_iterations = 200
 # clr = 1e-15
 clr = 1e-6
 # lr_decay = 0.9
 lr_decay = 1.0
-# here we test several regul coeffs
-regul_coeff_start = 1e-7
+regul_coeff_start = 5e-1
 regul_coeff = regul_coeff_start
-# regul_multiplier = 5
 
 hlr = list()
 hcost = list()
 
 if do_regularize:
     for i in range(nb_iterations):
-        print '... it: %d'%i
         ccost = list()
         hlr.append(clr)
         # print 'i:', i, 'w:', w.get_value()
@@ -121,15 +121,15 @@ if do_regularize:
         for cx, cy in zip(X_train, y_train):
             c = train(cx, cy, clr, regul_coeff)
             ccost.append(c)
-            print cx[0:3], cy, c
-            if ind_it % 100 == 0:
-                break
+            # print cx[0:3], cy, c
+            # if ind_it % 100 == 0:
+            #     break
             ind_it += 1
         hcost.append(np.mean(ccost))
+        print '    ... it: %d cost: %g'%(i, hcost[-1])
         lr *= lr_decay
-
-        plt.plot(ccost)
-        plt.show()
+        # plt.plot(ccost)
+        # plt.show()
 
 else:
     for i in range(nb_iterations):
