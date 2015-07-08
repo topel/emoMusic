@@ -4,9 +4,11 @@ import csv
 import numpy as np
 from sklearn.metrics import mean_squared_error
 from scipy.stats.stats import pearsonr
+from sklearn import preprocessing
 
 def load_y(datadir):
     FILENAME = datadir + 'annotations/dynamic_arousals.csv'
+    print '... loading y: ', FILENAME
     song_id = []
     y_temp = {}
     Index = 0
@@ -48,7 +50,7 @@ def load_y(datadir):
 def load_X(datadir, song_id):
     # Number of frame per song
     NUM_FRAMES = 60
-
+    print '... loading X '
     X = None
     for Id in song_id:
         FILENAME = datadir + "openSMILE_features/%d.csv" %Id
@@ -67,9 +69,29 @@ def load_X(datadir, song_id):
         else:
             X = np.vstack((X,X_temp_array))
 
+    # standardize data:
+
+
     return X
 
+def standardize(X, scaler=None):
+    if scaler == None:
+        scaler = preprocessing.StandardScaler().fit(X)
+        print 'standardizing w/o scaler'
+    else:
+        print 'standardizing with scaler'
+    X = scaler.transform(X)
+    return X, scaler
+
+def add_intercept(X):
+    # add column of ones to data to account for the bias:
+    ones = np.ones((X.shape[0],1))
+    # print ones.shape
+    X_ = np.hstack((X, ones))
+    return X_
+
 def mix(X, y, purcent, num_frames, song_id, nb_of_songs):
+    print '... subsetting and shuffle'
     # Vector of permutation of length the number of song (indicating the coordonnate of the begginning of each song)
     seed = 1
     np.random.seed(seed)
@@ -125,6 +147,24 @@ def evaluate(y_test, y_hat, tst_song):
     pcorr = list()
     pcorr.append(pearsonr(y_test[:,0], y_hat[:,0]))
     pcorr.append(pearsonr(y_test[:,1], y_hat[:,1]))
+
+    return RMSE, pcorr, error_per_song, mean_per_song
+
+def evaluate1d(y_test, y_hat, tst_song):
+    # # The mean square error
+    # MSE = np.mean((y_hat - y_test) ** 2, axis=0)
+    # # MSE = np.mean(np.sqrt((y_hat - y_test) ** 2),axis=0)
+    # RMSE = np.sqrt(MSE)
+
+    diff = np.sqrt((y_hat - y_test)**2)
+    error_per_song = np.array([np.mean(diff[60*k:60*(k+1)],axis=0) for k in range(tst_song)])
+    mean_per_song = np.array([np.mean(y_test[60*k:60*(k+1)],axis=0) for k in range(tst_song)])
+
+    RMSE = list()
+    RMSE.append(mean_squared_error(y_test[:], y_hat[:])**0.5)
+
+    pcorr = list()
+    pcorr.append(pearsonr(y_test[:], y_hat[:]))
 
     return RMSE, pcorr, error_per_song, mean_per_song
 

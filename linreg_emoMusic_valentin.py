@@ -12,7 +12,8 @@ from utils import load_X, load_y, mix, evaluate
 
 PURCENT = 5 # Purcentage of the set you want on the test set
 NUM_FRAMES = 60
-DATADIR = '/baie/corpus/emoMusic/train/'
+# DATADIR = '/baie/corpus/emoMusic/train/'
+DATADIR = 'train/'
 y, song_id, nb_of_songs = load_y(DATADIR)
 X = load_X(DATADIR, song_id)
 
@@ -49,8 +50,8 @@ print '\n'
 #print('Error per song: \n', Error_per_song)
 
 print(
-        'sklearn --> arrousal : %.2f, valence : %.2f\n'
-        'Pearson Corr --> arrousal : %.3f, valence : %.3f \n'
+        'sklearn --> arrousal : %.4f, valence : %.4f\n'
+        'Pearson Corr --> arrousal : %.4f, valence : %.4f \n'
       % (RMSE[0],RMSE[1],pcorr[0][0], pcorr[1][0])
 )
 
