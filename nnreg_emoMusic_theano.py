@@ -8,8 +8,8 @@ from theano import tensor as T
 
 PURCENT = 5 # Purcentage of the set you want on the test set
 NUM_FRAMES = 60
-# DATADIR = '/baie/corpus/emoMusic/train/'
-DATADIR = './train/'
+DATADIR = '/baie/corpus/emoMusic/train/'
+# DATADIR = './train/'
 
 do_regularize = False
 
@@ -69,6 +69,17 @@ nb_features = X_train.shape[1]
 print 'nb_feat: ', nb_features
 nb_hidden = 10
 nb_output = 2
+
+nb_iterations = 100
+minibatch_size = 100
+# clr = 1e-15
+clr = 1e-1
+# lr_decay = 0.9
+lr_decay = 1.0
+regul_coeff_start = 5e-1
+regul_coeff = regul_coeff_start
+
+
 # w_h = init_weights((nb_features, nb_output))
 w_h = init_weights((nb_features, nb_hidden))
 w_o = init_weights((nb_hidden, nb_output))
@@ -88,7 +99,8 @@ else:
     # linear cost
     # cost = T.mean(T.sqr(y - Y))
     # quadratic cost
-    cost = T.mean(T.sqr(T.dot(y - Y, (y - Y).T)))
+    # cost = T.mean(T.sqr(T.dot(y - Y, (y - Y).T)))
+    cost = T.sqrt(T.mean(T.dot(y - Y, (y - Y).T)))
 
 params = [w_h, w_o]
 # params = [w_h]
@@ -107,14 +119,7 @@ predict = theano.function(inputs=[X], outputs=y, allow_input_downcast=True)
 print '... Training ...'
 print ' REGULRAIZE: ', do_regularize
 
-nb_iterations = 10
-minibatch_size = 100
-# clr = 1e-15
-clr = 1e-1
-# lr_decay = 0.9
-lr_decay = 1.0
-regul_coeff_start = 5e-1
-regul_coeff = regul_coeff_start
+
 
 hlr = list()
 hcost = list()

@@ -11,8 +11,8 @@ srng = RandomStreams()
 
 PURCENT = 5 # Purcentage of the set you want on the test set
 NUM_FRAMES = 60
-# DATADIR = '/baie/corpus/emoMusic/train/'
-DATADIR = './train/'
+DATADIR = '/baie/corpus/emoMusic/train/'
+# DATADIR = './train/'
 
 do_regularize = False
 
@@ -56,12 +56,12 @@ def softmax(X):
     e_x = T.exp(X - X.max(axis=1).dimshuffle(0, 'x'))
     return e_x / e_x.sum(axis=1).dimshuffle(0, 'x')
 
-def sgd(cost, params, lr=0.05):
-    grads = T.grad(cost=cost, wrt=params)
-    updates = []
-    for p, g in zip(params, grads):
-        updates.append([p, p - g * lr])
-    return updates
+# def sgd(cost, params, lr=0.05):
+#     grads = T.grad(cost=cost, wrt=params)
+#     updates = []
+#     for p, g in zip(params, grads):
+#         updates.append([p, p - g * lr])
+#     return updates
 
 def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
     grads = T.grad(cost=cost, wrt=params)
@@ -108,9 +108,9 @@ w_h = init_weights((nb_features, nb_hidden))
 w_h2 = init_weights((nb_hidden, nb_hidden))
 w_o = init_weights((nb_hidden, nb_output))
 
-h, h2, y = model(X, w_h, w_h2, w_o, 0.2, 0.5)
+# h, h2, y = model(X, w_h, w_h2, w_o, 0.2, 0.5)
 # noise_h, noise_h2, noise_y = model(X, w_h, w_h2, w_o, 0.2, 0.5)
-# h, h2, y = model(X, w_h, w_h2, w_o, 0., 0.)
+h, h2, y = model(X, w_h, w_h2, w_o, 0., 0.)
 
 
 lr = T.scalar('learning rate')
@@ -125,7 +125,9 @@ else:
     # linear cost
     # cost = T.mean(T.sqr(y - Y))
     # quadratic cost
-    cost = T.mean(T.sqr(T.dot(y - Y, (y - Y).T)))
+    # cost = T.mean(T.sqr(T.dot(y - Y, (y - Y).T)))
+    cost = T.sqrt(T.mean(T.dot(y - Y, (y - Y).T)))
+
 
 params = [w_h, w_h2, w_o]
 # updates = sgd(cost, params, lr)
@@ -144,7 +146,7 @@ predict = theano.function(inputs=[X], outputs=y, allow_input_downcast=True)
 print '... Training ...'
 print ' REGULRAIZE: ', do_regularize
 
-nb_iterations = 10
+nb_iterations = 40
 minibatch_size = 100
 # clr = 1e-15
 clr = 1e-1

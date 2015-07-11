@@ -47,6 +47,34 @@ def load_y(datadir):
 
     return y,song_id,  nb_of_songs
 
+
+
+def load_y_for_analysis(datadir):
+    FILENAME = datadir + 'annotations/dynamic_arousals.csv'
+    print '... loading y: ', FILENAME
+    song_id = []
+    arousal = dict()
+    valence = dict()
+    with open(FILENAME, "rb") as infile:
+        reader = csv.reader(infile)
+        next(reader, None)  # skip the headers
+        for row in reader:
+            id = int(row[0])
+            song_id.append(id)
+            arousal['%d'%id] = row[1::]
+
+    FILENAME = datadir + 'annotations/dynamic_valences.csv'
+    Index = 0
+    with open(FILENAME, "rb") as infile:
+        reader = csv.reader(infile)
+        next(reader, None)  # skip the headers
+        for row in reader:
+            id = int(row[0])
+            valence['%d'%id] = row[1::]
+
+    nb_of_songs = len(song_id)
+    return arousal, valence, song_id,  nb_of_songs
+
 def load_X(datadir, song_id):
     # Number of frame per song
     NUM_FRAMES = 60
@@ -73,6 +101,24 @@ def load_X(datadir, song_id):
 
 
     return X
+
+def load_metadata(metadatafile, genrelistfile):
+    genre = dict()
+    with open(metadatafile, "rb") as infile:
+        reader = csv.reader(infile)
+        next(reader, None)  # skip the headers
+        for row in reader:
+            id = int(row[0])
+            genre['%d'%id] = row[-1]
+
+    genre_of_interest = list()
+    with open(genrelistfile, "rb") as infile:
+        reader = csv.reader(infile)
+        for row in reader:
+            genre_of_interest.append(row[0])
+
+    return genre, genre_of_interest
+
 
 def standardize(X, scaler=None):
     if scaler == None:

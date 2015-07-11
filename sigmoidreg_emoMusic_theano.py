@@ -11,7 +11,7 @@ NUM_FRAMES = 60
 DATADIR = '/baie/corpus/emoMusic/train/'
 # DATADIR = './train/'
 
-do_regularize = True
+do_regularize = False
 
 y_, song_id, nb_of_songs = load_y(DATADIR)
 X_ = load_X(DATADIR, song_id)
@@ -21,31 +21,13 @@ X_ = load_X(DATADIR, song_id)
 X_train, y_train, X_test, y_test, song_id_tst = mix(X_, y_, PURCENT, NUM_FRAMES, song_id, nb_of_songs)
 print X_train.shape, y_train.shape, X_test.shape, y_test.shape
 # print X_train[0:3,0:3]
-# print np.mean(X_train[:,0:3], axis=0), np.std(X_train[:,0:3], axis=0)
-# print np.mean(X_test[:,0:3], axis=0), np.std(X_test[:,0:3], axis=0)
-
-# with(open('train_dummy.txt', mode='w')) as infile:
-#     for i in range(X_train.shape[0]):
-#         s=''
-#         for feat in range(3):
-#             s = s + '%g '%X_train[i,feat]
-#         infile.write('%s\n'%s)
 
 # standardize data
 X_train, scaler = standardize(X_train)
 X_test, _ = standardize(X_test, scaler)
 
-# print np.mean(X_train[:,0:3], axis=0), np.std(X_train[:,0:3], axis=0)
-# print np.mean(X_test[:,0:3], axis=0), np.std(X_test[:,0:3], axis=0)
-
-# with(open('train_dummy_normed.txt', mode='w')) as infile:
-#     for i in range(X_train.shape[0]):
-#         s=''
-#         for feat in range(3):
-#             s = s + '%g '%X_train[i,feat]
-#         infile.write('%s\n'%s)
-
 # one dimension at a time
+# 0: arousal, 1: valence
 y_train = y_train[:,0]
 y_test = y_test[:,0]
 
@@ -64,11 +46,10 @@ Y = T.scalar()
 lr = T.scalar('learning rate')
 regul = T.scalar('L2 regul. coeff')
 
-# def model(X, w):
-#     return 2.0*T.nnet.sigmoid(T.dot(X, w))-1.0
-
 def model(X, w):
-    return T.tanh(T.dot(X, w))
+    # return T.tanh(T.dot(X, w))
+    return 2.0*T.nnet.sigmoid(T.dot(X, w)) - 1.0
+    # return T.erf(T.dot(X,w))
 
 nb_features = X_train.shape[1]
 print 'nb_feat: ', nb_features
@@ -85,7 +66,8 @@ else:
     # linear cost
     # cost = T.mean(T.sqr(y - Y))
     # quadratic cost
-    cost = T.mean(T.sqr(T.dot(y - Y, y - Y)))
+    # cost = T.mean(T.sqr(T.dot(y - Y, y - Y)))
+    cost = T.sqrt(T.mean(T.dot(y - Y, y - Y)))
 
 gradient = T.grad(cost=cost, wrt=w)
 updates = [[w, w - gradient * lr]]
@@ -103,8 +85,8 @@ print ' REGULRAIZE: ', do_regularize
 
 nb_iterations = 200
 # clr = 1e-15
-clr = 1e-6
-# lr_decay = 0.9
+clr = 1e-5
+# lr_decay = 0.98
 lr_decay = 1.0
 regul_coeff_start = 5e-1
 regul_coeff = regul_coeff_start
@@ -145,9 +127,9 @@ else:
             #     break
             ind_it += 1
         hcost.append(np.mean(ccost))
-        print '    ... it: %d cost: %g'%(i, hcost[-1])
-
-        lr *= lr_decay
+        print '    ... it: %d cost: %g clr: %g'%(i, hcost[-1], clr)
+        if i > 50:
+            clr *= lr_decay
         # plt.plot(ccost)
         # plt.show()
 

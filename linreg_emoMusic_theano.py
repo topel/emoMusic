@@ -82,7 +82,8 @@ else:
     # linear cost
     # cost = T.mean(T.sqr(y - Y))
     # quadratic cost
-    cost = T.mean(T.sqr(T.dot(y - Y, y - Y)))
+    # cost = T.mean(T.sqr(T.dot(y - Y, y - Y)))
+    cost = T.sqrt(T.mean(T.dot(y - Y, y - Y)))
 
 gradient = T.grad(cost=cost, wrt=w)
 updates = [[w, w - gradient * lr]]
@@ -98,7 +99,7 @@ predict = theano.function(inputs=[X], outputs=y, allow_input_downcast=True)
 print '... Training ...'
 print ' REGULRAIZE: ', do_regularize
 
-nb_iterations = 150
+nb_iterations = 100
 # clr = 1e-15
 clr = 1e-6
 # lr_decay = 0.9
