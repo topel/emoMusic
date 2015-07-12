@@ -1,14 +1,14 @@
 __author__ = 'thomas'
 
 import numpy as np
-from utils import load_X, load_y_for_analysis, mix, standardize, add_intercept, evaluate, evaluate1d, load_metadata
+from utils import load_X, load_y_to_dict, mix, standardize, add_intercept, evaluate, evaluate1d, load_metadata
 import matplotlib.pyplot as plt
 
 NUM_FRAMES = 60
 DATADIR = '/baie/corpus/emoMusic/train/'
 # DATADIR = './train/'
 
-arousal, valence, song_id, nb_of_songs = load_y_for_analysis(DATADIR)
+arousal, valence, song_id, nb_of_songs = load_y_to_dict(DATADIR)
 
 metadatafile = DATADIR + 'annotations/metadata.csv'
 list_20genres_file = DATADIR + '../20_most_frequent_genres.lst'

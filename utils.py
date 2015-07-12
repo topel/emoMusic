@@ -2,9 +2,13 @@ __author__ = 'thomas'
 
 import csv
 import numpy as np
+import random
 from sklearn.metrics import mean_squared_error
 from scipy.stats.stats import pearsonr
 from sklearn import preprocessing
+import re
+from copy import deepcopy
+
 
 def load_y(datadir):
     FILENAME = datadir + 'annotations/dynamic_arousals.csv'
@@ -49,7 +53,7 @@ def load_y(datadir):
 
 
 
-def load_y_for_analysis(datadir):
+def load_y_to_dict(datadir):
     FILENAME = datadir + 'annotations/dynamic_arousals.csv'
     print '... loading y: ', FILENAME
     song_id = []
@@ -61,19 +65,43 @@ def load_y_for_analysis(datadir):
         for row in reader:
             id = int(row[0])
             song_id.append(id)
-            arousal['%d'%id] = row[1::]
+            arousal['%d'%id] = [float(val) for val in row[1::]]
 
     FILENAME = datadir + 'annotations/dynamic_valences.csv'
+    print '... loading y: ', FILENAME
     Index = 0
     with open(FILENAME, "rb") as infile:
         reader = csv.reader(infile)
         next(reader, None)  # skip the headers
         for row in reader:
             id = int(row[0])
-            valence['%d'%id] = row[1::]
+            valence['%d'%id] = [float(val) for val in row[1::]]
 
     nb_of_songs = len(song_id)
     return arousal, valence, song_id,  nb_of_songs
+
+def load_X_to_dict(datadir, song_id):
+    # Number of frame per song
+    NUM_FRAMES = 60
+    print '... loading X to dict, keys=song_id, values=feature_vector'
+    X = dict()
+    for Id in song_id:
+        FILENAME = datadir + "openSMILE_features/%d.csv" %Id
+
+        with open(FILENAME, 'rb') as infile:
+            reader = csv.reader(infile, delimiter =";")
+            next(reader, None)  # skip the headers
+            X_temp = [ row for row in reader ]
+
+        num_features = len(X_temp[0])
+        num_col = len(X_temp)
+
+        X_temp_array = np.array([ [float(X_temp[k][l]) for l in range(1,num_features) ] for k in range(num_col-NUM_FRAMES,num_col)] )
+
+        X['%d'%Id] = X_temp_array
+
+    return X
+
 
 def load_X(datadir, song_id):
     # Number of frame per song
@@ -96,31 +124,155 @@ def load_X(datadir, song_id):
             X = X_temp_array
         else:
             X = np.vstack((X,X_temp_array))
-
-    # standardize data:
-
-
     return X
 
-def load_metadata(metadatafile, genrelistfile):
-    genre = dict()
-    with open(metadatafile, "rb") as infile:
-        reader = csv.reader(infile)
-        next(reader, None)  # skip the headers
-        for row in reader:
-            id = int(row[0])
-            genre['%d'%id] = row[-1]
+def load_metadata(metadatafile, genrelistfile, severalGenresPerSong):
+    '''load genre info of songs
+    - genre names are taken from the list in genrelistfile
+
+    - inputs:
+        - metadatafile: csv file
+        - genrelistfile: text file
+        - severalGenresPerSong: boolean to search for several genres per song
+        example: raw genre: 'rock-classical' -> two genres: 'rock' and 'classical'
+    - outputs:
+        - genre: a dict with keys=song_id, values=a single genre string or a list of strings with one or more genres of the song'
+        - genrenum: the same dict but with integer as genre indexes instead of strings
+    '''
 
     genre_of_interest = list()
+    genre_2_num = dict()
+    ind = 0
     with open(genrelistfile, "rb") as infile:
         reader = csv.reader(infile)
         for row in reader:
             genre_of_interest.append(row[0])
+            genre_2_num[row[0]] = ind
+            ind += 1
 
-    return genre, genre_of_interest
+    genre = dict()
+    genre_num = dict()
+    with open(metadatafile, "rb") as infile:
+        reader = csv.reader(infile)
+        next(reader, None)  # skip the headers
+        if not severalGenresPerSong:
+            for row in reader:
+                id = int(row[0])
+                genre['%d'%id] = row[-1]
 
+        else:
+            for row in reader:
+                raw_genre = row[-1]
+                Id = int(row[0])
+                genre['%d'%Id] = list()
+                genre_num['%d'%Id] = list()
+                for g in genre_of_interest:
+                    if re.search(g, raw_genre):
+                        genre['%d'%Id].append(g)
+                        genre_num['%d'%Id].append(genre_2_num[g])
+                if len(genre['%d'%Id]) < 1:
+                    print 'ERROR: no genre label for song id: %d'%(Id)
+
+    return genre, genre_num, genre_of_interest
+
+
+def create_song_dict(X, arousal, valence, song_id, genre, genre_num):
+    data = dict()
+    for id in song_id:
+        # print id, genre['%d'%id]
+        data['%d'%id] = dict()
+        data['%d'%id]['genre'] = genre['%d'%id]
+        data['%d'%id]['genrenum'] = genre_num['%d'%id]
+        data['%d'%id]['X'] = X['%d'%id]
+        data['%d'%id]['arousal'] = arousal['%d'%id]
+        data['%d'%id]['valence'] = valence['%d'%id]
+        # print id, data['%d'%id]['genre'], data['%d'%id]['X'][0:2,0:5], data['%d'%id]['arousal'][0:5], data['%d'%id]['valence'][0:5]
+        # print id, data['%d'%id]['genre']
+    return data
+
+
+def load_data_to_song_dict(metadatafile, genrelistfile, datadir, severalGenresPerSong):
+    print 'loading metadata...'
+    genre, genre_num, genre_of_interest = load_metadata(metadatafile, genrelistfile, severalGenresPerSong)
+    print 'loading aoursal, valence, data...'
+    arousal, valence, song_id, nb_of_songs = load_y_to_dict(datadir)
+    print 'loading X...'
+    X = load_X_to_dict(datadir, song_id)
+    print 'creating dict with keys=song_ids, values=genre, arousal, valence, X'
+    data = create_song_dict(X, arousal, valence, song_id, genre, genre_num)
+
+    return data
+
+def create_folds(data, num_folds):
+    '''Create num_folds training and testing sets'''
+    subsets = []
+    keys = list(data.keys())
+    samples_per_fold = len(data) / num_folds
+    for i in xrange(num_folds):
+        # Get the number of samples for this fold
+        # num_samples = samples_per_fold + 1 if i < len(data) % num_folds else samples_per_fold
+
+        # Sample without replacement from the available keys
+
+        np.random.seed(i) # to get reproducible results
+        selected = np.random.choice(keys, size=samples_per_fold, replace=False)
+
+        # Remove the keys from available set
+        for s in selected:
+            keys.remove(s)
+
+        # Add the selected subsets to the fold
+        subsets.append({s: data[s] for s in selected})
+
+    # Create training and testing sets from the folds
+    folds = []
+
+    # Note that this is terrible big-O, but folds are generally small so who cares
+    for i,testing in enumerate(subsets):
+        training = {}
+        for j,fold in enumerate(subsets):
+            if i == j:
+                continue
+            for key, value in fold.iteritems():
+                training[key] = value
+        folds.append((training, testing))
+
+    return folds
+
+def standardize_folds(folds):
+    '''see http://scikit-learn.org/stable/modules/preprocessing.html'''
+    new_folds = deepcopy(folds)
+
+    for fold in xrange(len(folds)):
+        print '... standardizing fold: %d ... ' %(fold)
+        train = folds[fold][0]
+        feat = None
+        for _, val in train.iteritems():
+            if feat is None:
+                feat = val['X']
+            else:
+                feat = np.vstack((feat, val['X']))
+
+        scaler = preprocessing.StandardScaler().fit(feat)
+        new_folds[fold][0]['mean'] = scaler.mean_
+        new_folds[fold][0]['std'] = scaler.std_
+
+        # standardize training data
+        for cle, val in train.iteritems():
+            new_folds[fold][0][cle]['X'] = scaler.transform(val['X'])
+
+        # standardize test data
+        test = folds[fold][1]
+        for cle, val in test.iteritems():
+            new_folds[fold][1][cle]['X'] = scaler.transform(val['X'])
+
+        # break
+
+
+    return new_folds
 
 def standardize(X, scaler=None):
+    '''see http://scikit-learn.org/stable/modules/preprocessing.html'''
     if scaler == None:
         scaler = preprocessing.StandardScaler().fit(X)
         print 'standardizing w/o scaler'
