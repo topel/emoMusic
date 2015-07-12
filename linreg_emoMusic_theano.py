@@ -50,6 +50,7 @@ y_train = y_train[:,0]
 y_test = y_test[:,0]
 
 X_train = X_train[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
+X_test = X_test[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
 
 print X_train.shape, y_train.shape, X_test.shape, y_test.shape
 
