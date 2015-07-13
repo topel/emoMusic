@@ -26,6 +26,11 @@ print X_train.shape, y_train.shape, X_test.shape, y_test.shape
 X_train, scaler = standardize(X_train)
 X_test, _ = standardize(X_test, scaler)
 
+X_train = X_train[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
+X_test = X_test[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
+# X_train = X_train[:,[13,85,103,142,214]]
+# X_test = X_test[:,[13,85,103,142,214]]
+
 # one dimension at a time
 # 0: arousal, 1: valence
 y_train = y_train[:,0]
@@ -47,8 +52,8 @@ lr = T.scalar('learning rate')
 regul = T.scalar('L2 regul. coeff')
 
 def model(X, w):
-    # return T.tanh(T.dot(X, w))
-    return 2.0*T.nnet.sigmoid(T.dot(X, w)) - 1.0
+    return T.tanh(T.dot(X, w))
+    # return 2.0*T.nnet.sigmoid(T.dot(X, w)) - 1.0
     # return T.erf(T.dot(X,w))
 
 nb_features = X_train.shape[1]
@@ -128,7 +133,7 @@ else:
             ind_it += 1
         hcost.append(np.mean(ccost))
         print '    ... it: %d cost: %g clr: %g'%(i, hcost[-1], clr)
-        if i > 50:
+        if i > 1:
             clr *= lr_decay
         # plt.plot(ccost)
         # plt.show()
@@ -138,7 +143,7 @@ W = w.get_value()
 print '... finalCost=%g'%(hcost[-1])
 # print W
 
-doplotCost = True
+doplotCost = False
 if doplotCost:
     regul_coeff = regul_coeff_start
     fig = plt.figure()

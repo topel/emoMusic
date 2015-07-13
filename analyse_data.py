@@ -8,8 +8,8 @@ from scipy.stats.stats import pearsonr
 
 if __name__ == '__main__':
     NUM_FRAMES = 60
-    # DATADIR = '/baie/corpus/emoMusic/train/'
-    DATADIR = './train/'
+    DATADIR = '/baie/corpus/emoMusic/train/'
+    # DATADIR = './train/'
 
     metadatafile = DATADIR + 'annotations/metadata.csv'
     list_genres_of_interest_file = DATADIR + 'annotations/categories.lst'

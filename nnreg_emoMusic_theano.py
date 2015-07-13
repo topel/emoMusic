@@ -29,6 +29,9 @@ X_test, _ = standardize(X_test, scaler)
 # y_train = y_train[:,0]
 # y_test = y_test[:,0]
 
+X_train = X_train[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
+X_test = X_test[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
+
 print X_train.shape, y_train.shape, X_test.shape, y_test.shape
 
 tst_song = len(song_id_tst)
@@ -67,7 +70,7 @@ Y = T.fmatrix()
 
 nb_features = X_train.shape[1]
 print 'nb_feat: ', nb_features
-nb_hidden = 10
+nb_hidden = 100
 nb_output = 2
 
 nb_iterations = 100

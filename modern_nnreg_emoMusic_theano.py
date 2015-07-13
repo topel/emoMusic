@@ -32,13 +32,16 @@ X_test, _ = standardize(X_test, scaler)
 # y_train = y_train[:,0]
 # y_test = y_test[:,0]
 
+X_train = X_train[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
+X_test = X_test[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
+
 print X_train.shape, y_train.shape, X_test.shape, y_test.shape
 
 tst_song = len(song_id_tst)
 
-# add column of ones to data to account for the bias:
-X_train = add_intercept(X_train)
-print X_train.shape
+### add column of ones to data to account for the bias:
+# X_train = add_intercept(X_train)
+# print X_train.shape
 # print X_train[0:10]
 
 # Theano symbolic definitions
@@ -108,9 +111,9 @@ w_h = init_weights((nb_features, nb_hidden))
 w_h2 = init_weights((nb_hidden, nb_hidden))
 w_o = init_weights((nb_hidden, nb_output))
 
-# h, h2, y = model(X, w_h, w_h2, w_o, 0.2, 0.5)
+h, h2, y = model(X, w_h, w_h2, w_o, 0.2, 0.5)
 # noise_h, noise_h2, noise_y = model(X, w_h, w_h2, w_o, 0.2, 0.5)
-h, h2, y = model(X, w_h, w_h2, w_o, 0., 0.)
+# h, h2, y = model(X, w_h, w_h2, w_o, 0., 0.)
 
 
 lr = T.scalar('learning rate')
@@ -215,9 +218,9 @@ if doplotCost:
 
 # predict and eval on test set
 print '... predicting ...'
-# add column of ones to data to account for the bias:
-X_test = add_intercept(X_test)
-print X_test.shape
+# # add column of ones to data to account for the bias:
+# X_test = add_intercept(X_test)
+# print X_test.shape
 # pred = list()
 # for cx in X_test:
 #     pred.append(predict(cx))

@@ -25,6 +25,7 @@ def load_y(datadir):
             Index += 1
 
     FILENAME = datadir + 'annotations/dynamic_valences.csv'
+    print '... loading y: ', FILENAME
     Index = 0
     with open(FILENAME, "rb") as infile:
         reader = csv.reader(infile)

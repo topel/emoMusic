@@ -132,8 +132,8 @@ if do_regularize:
         hcost.append(np.mean(ccost))
         lr *= lr_decay
 
-        plt.plot(ccost)
-        plt.show()
+#        plt.plot(ccost)
+#        plt.show()
 
 else:
     for i in range(nb_iterations):
@@ -160,7 +160,7 @@ W = w.get_value()
 print '... finalCost=%g'%(hcost[-1])
 # print W
 
-doplotCost = True
+doplotCost = False
 if doplotCost:
     regul_coeff = regul_coeff_start
     fig = plt.figure()
