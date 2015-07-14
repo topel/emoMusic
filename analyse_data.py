@@ -59,7 +59,7 @@ if __name__ == '__main__':
     for feat in xrange(nb_feat):
         pr_val = pearsonr(train_feat[:,feat], val)[0]
         pr_ar = pearsonr(train_feat[:,feat], ar)[0]
-        if (abs(pr_val)>0.3) |  (abs(pr_ar)>0.3):
+        if (abs(pr_val)>0.4) |  (abs(pr_ar)>0.4):
             s = s + '%d,'%feat
             print '%d, pr_val: %g, pr_ar: %g'%(feat, pr_val, pr_ar)
-        print s
+    print s
