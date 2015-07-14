@@ -74,7 +74,7 @@ res = sm.OLS(y_train, X_train).fit()
 print res.summary()
 
 # cf http://statsmodels.sourceforge.net/devel/mixed_linear.html
-# md = smf.mixedlm(y_train, X_train, groups=data[“Pig”])
+# md = smf.mixedlm(y_train, X_train, groups=data["Pig"])
 # mdf = md.fit()
 # print(mdf.summary())
 
