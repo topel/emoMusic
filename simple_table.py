@@ -1,5 +1,6 @@
 __author__ = 'thomas'
 
+
 # Load modules and data
 import numpy as np
 import statsmodels.api as sm
@@ -40,10 +41,9 @@ print X_train.shape, y_train.shape, X_test.shape, y_test.shape
 X_train, scaler = standardize(X_train)
 X_test, _ = standardize(X_test, scaler)
 
+# select most correlated features
 X_train = X_train[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
 X_test = X_test[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
-# X_train = X_train[:,[13,85,103,142,214]]
-# X_test = X_test[:,[13,85,103,142,214]]
 
 # one dimension at a time
 # 0: arousal, 1: valence
@@ -61,54 +61,14 @@ else:
 
 print X_train.shape, y_train.shape, X_test.shape, y_test.shape
 
-tst_song = len(song_id_tst)
+nb_test_song = len(song_id_tst)
 
-# add column of ones to data to account for the bias:
-X_train = add_intercept(X_train)
-print X_train.shape
-# print X_train[0:10]
+dat=np.hstack((y_train[0:10], X_train[0:10,:]))
 
-# Fit regression model
-res = sm.OLS(y_train, X_train).fit()
-# Inspect the results
-print res.summary()
+colnames = ['Y', 'f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12', 'f13', 'f14', 'f15', 'f16', 'f17', 'f18', 'f19', 'f20']
 
-# cf http://statsmodels.sourceforge.net/devel/mixed_linear.html
-# md = smf.mixedlm(y_train, X_train, groups=data["Pig"])
-# mdf = md.fit()
-# print(mdf.summary())
+mystubs = [ 's0', "s1", "s2", 's3', 's4', 's5', 's6', 's7', 's8', 's9' ]
+mystubs = range(10)
 
+tbl =  sm.SimpleTable(dat, colnames, mystubs, title="DUMMY")
 
-X_test = add_intercept(X_test)
-pred = res.predict(X_test)
-print pred
-
-y_hat = np.array(pred, dtype=float)
-
-RMSE, pcorr, error_per_song, mean_per_song = evaluate1d(y_test, y_hat, tst_song)
-
-All_stack =np.hstack(( error_per_song, mean_per_song ))
-print'  Error per song (ar/val)  Mean_per_song (ar/val)    :\n'
-print(All_stack)
-print '\n'
-
-print'song_id :'
-print(song_id_tst)
-print '\n'
-#print('Error per song: \n', Error_per_song)
-
-print(
-        'sklearn --> arrousal : %.4f, valence : %.4f\n'
-        'Pearson Corr --> arrousal : %.4f, valence : %.4f \n'
-        % (RMSE[0], -1. , pcorr[0][0], -1)
-      # % (RMSE[0],RMSE[1],pcorr[0][0], pcorr[1][0])
-)
-
-fig, ax = plt.subplots()
-x1 = np.linspace(1,len(pred),len(pred))
-ax.plot(x1, y_test, 'o', label="Data")
-ax.plot(x1, y_hat, 'r-', label="OLS prediction")
-plt.title(EMO + ' on Test subset')
-ax.legend(loc="best")
-plt.show()
-# plt.savefig('figures/linreg_sm_' + EMO + '_TRAIN.png')

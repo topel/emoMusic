@@ -18,8 +18,8 @@ import matplotlib.pyplot as plt
 
 PURCENT = 5 # Purcentage of the set you want on the test set
 NUM_FRAMES = 60
-# DATADIR = '/baie/corpus/emoMusic/train/'
-DATADIR = './train/'
+DATADIR = '/baie/corpus/emoMusic/train/'
+# DATADIR = './train/'
 
 
 EMO='valence'
@@ -43,8 +43,6 @@ X_test, _ = standardize(X_test, scaler)
 # select most correlated features
 X_train = X_train[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
 X_test = X_test[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
-# X_train = X_train[:,[13,85,103,142,214]]
-# X_test = X_test[:,[13,85,103,142,214]]
 
 # one dimension at a time
 # 0: arousal, 1: valence
@@ -62,7 +60,7 @@ else:
 
 print X_train.shape, y_train.shape, X_test.shape, y_test.shape
 
-tst_song = len(song_id_tst)
+nb_test_song = len(song_id_tst)
 
 # create fake vector of song id for X_train to bse used in mixedlm
 X_train_fake_song_ids = np.zeros_like(y_train, dtype=int)
@@ -73,6 +71,22 @@ for ind in xrange(y_train.shape[0]):
     if (ind+1) % NUM_FRAMES == 0:
         fake_id += 1
 
+# create fake time indices
+tmp = range(1, 61, 1)
+X_train_fake_time = np.array([])
+for i in xrange(int(y_train.shape[0] / NUM_FRAMES)):
+    X_train_fake_time = np.hstack((X_train_fake_time, tmp))
+
+print X_train_fake_time.shape
+
+# # create fake vector of song id for X_test to bse used in mixedlm
+# X_test_fake_song_ids = np.zeros_like(y_test, dtype=int)
+# fake_id = 0
+# for ind in xrange(y_test.shape[0]):
+#     # print ind, fake_id, (ind+1) % NUM_FRAMES
+#     X_test_fake_song_ids[ind] = fake_id
+#     if (ind+1) % NUM_FRAMES == 0:
+#         fake_id += 1
 
 
 ### add column of ones to data to account for the bias:
@@ -82,7 +96,9 @@ for ind in xrange(y_train.shape[0]):
 
 # Fit regression model
 # cf http://statsmodels.sourceforge.net/devel/mixed_linear.html
-md = smf.mixedlm(y_train, X_train, groups=X_train_fake_song_ids)
+# md = smf.mixedlm(y_train, X_train, groups=X_train_fake_song_ids)
+# md = sm.MixedLM(y_train, X_train, exog_re=X_train_fake_time, groups=X_train_fake_song_ids, use_sqrt=True)
+md = sm.MixedLM(y_train, X_train, groups=X_train_fake_song_ids, use_sqrt=True)
 mdf = md.fit()
 
 print mdf.summary()
@@ -90,11 +106,22 @@ print mdf.summary()
 
 # X_test = add_intercept(X_test)
 pred = mdf.predict(X_test)
-print pred
+# print pred
+
+pred = list()
+# predict each song separately and append predictions
+for ind_song in xrange(nb_test_song):
+    deb = ind_song * NUM_FRAMES
+    fin = deb + NUM_FRAMES
+    pred_song = mdf.predict(X_test[deb:fin, :])
+    pred.append(pred_song)
+
+# flatten list
+pred = [item for sublist in pred for item in sublist]
 
 y_hat = np.array(pred, dtype=float)
 
-RMSE, pcorr, error_per_song, mean_per_song = evaluate1d(y_test, y_hat, tst_song)
+RMSE, pcorr, error_per_song, mean_per_song = evaluate1d(y_test, y_hat, nb_test_song)
 
 All_stack =np.hstack(( error_per_song, mean_per_song ))
 print'  Error per song (ar/val)  Mean_per_song (ar/val)    :\n'

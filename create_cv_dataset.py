@@ -43,7 +43,7 @@ def write_folds_to_mat_files(normed_folds, num_folds):
         # save to MAT
         sio.savemat('train/matfiles/fold%d_normed.mat'%(fold), data, oned_as='row')
 
-def write_folds_to_pickle_files(normed_folds, num_folds):
+def write_folds_to_pickle_files(normed_folds, num_folds, DATADIR):
 
     import cPickle as pickle
     for fold in xrange(num_folds):
@@ -54,7 +54,7 @@ def write_folds_to_pickle_files(normed_folds, num_folds):
         data['test'] = normed_folds[fold][1]
 
         # save to pickle file
-        pickle.dump( data, open( 'train/pkl/fold%d_normed.pkl'%(fold), "wb" ) )
+        pickle.dump( data, open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold), "wb" ) )
 
 
 if __name__ == '__main__':
@@ -83,8 +83,8 @@ if __name__ == '__main__':
     # write_folds_to_mat_files(normed_folds, num_folds)
 
     print '... writing folds to pickle files ...'
-    write_folds_to_pickle_files(normed_folds, num_folds)
+    write_folds_to_pickle_files(normed_folds, num_folds, DATADIR)
 
     import cPickle as pickle
     fold_id = 0
-    fold0 = pickle.load( open( 'train/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )
+    fold0 = pickle.load( open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )
