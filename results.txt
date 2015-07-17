@@ -1,0 +1,22 @@
+linreg_sm
+features:     X_train = X_train[:,[10,12,13,17,19,82,83,84,85,89,90,91,103,140,142,146,148,212,214,218,220]]
+RMSE arousal : 0.2551
+PearsonCorr arousal : 0.6359
+RMSE valence : 0.2795
+PearsonCorr valence : 0.6091
+
+
+linreg_sm
+features: all (260)
+RMSE arousal : 0.2541
+PearsonCorr arousal : 0.6453
+RMSE valence : 0.2722
+PearsonCorr valence : 0.6403
+
+linreg_theano
+do_regularize = False
+features: all (260)
+RMSE arousal : 0.2539
+PearsonCorr arousal : 0.6465
+RMSE valence : 0.2753
+PearsonCorr valence : 0.6368

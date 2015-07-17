@@ -272,6 +272,47 @@ def standardize_folds(folds):
 
     return new_folds
 
+
+def load_X_from_fold(fold, subset):
+    song_ids = list()
+    X_ = None
+    y_ = None
+    for k, v in fold[subset].iteritems():
+        if (k == 'std' or k == 'mean'):
+            continue
+        song_ids.append(k)
+        val = np.array(v['valence'], dtype=float)
+        ar = np.array(v['arousal'], dtype=float)
+        tmp = np.hstack((val[:,np.newaxis], ar[:,np.newaxis]))
+
+        if X_ is None:
+            X_ = v['X']
+            y_ = tmp
+        else:
+            X_ = np.vstack((X_, v['X']))
+            y_ = np.vstack((y_, tmp))
+    return X_,  y_, np.array(song_ids, dtype=int)
+
+def load_X_from_fold_to_sequences(fold, subset):
+    song_ids = list()
+    X_ = None
+    y_ = None
+    for k, v in fold[subset].iteritems():
+        if (k == 'std' or k == 'mean'):
+            continue
+        song_ids.append(k)
+        val = np.array(v['valence'], dtype=float)
+        ar = np.array(v['arousal'], dtype=float)
+        tmp = np.hstack((val[:,np.newaxis], ar[:,np.newaxis]))
+
+        if X_ is None:
+            X_ = v['X']
+            y_ = tmp
+        else:
+            X_ = np.vstack((X_, v['X']))
+            y_ = np.vstack((y_, tmp))
+    return X_,  y_, np.array(song_ids, dtype=int)
+
 def standardize(X, scaler=None):
     '''see http://scikit-learn.org/stable/modules/preprocessing.html'''
     if scaler == None:
