@@ -23,8 +23,8 @@ DATADIR = '/baie/corpus/emoMusic/train/'
 # DATADIR = './train/'
 
 
-# EMO='valence'
-EMO='arousal'
+EMO='valence'
+# EMO='arousal'
 do_regularize = False
 
 # fold_id = 2
@@ -33,7 +33,7 @@ all_fold_pred = list()
 all_fold_y_test = list()
 all_fold_id_test = list()
 
-for fold_id in range(10):
+for fold_id in range(1):
     print '... loading FOLD %d'%fold_id
     fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )
 

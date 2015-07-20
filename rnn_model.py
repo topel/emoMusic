@@ -12,8 +12,30 @@ import time
 import os
 import datetime
 import cPickle as pickle
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
+
+# logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO,filename='example.log')
+
+log_level=logging.INFO
+logger.setLevel(log_level)
+# create file handler which logs even debug messages
+fh = logging.FileHandler('rnn_training.log')
+fh.setLevel(log_level)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(log_level)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(ch)
+
+
 
 import matplotlib.pyplot as plt
 plt.ion()
@@ -81,7 +103,9 @@ class RNN(object):
         # for every parameter, we maintain it's last update
         # the idea here is to use "momentum"
         # keep moving mostly in the same direction
-        self.updates = {}
+        # self.updates = {}
+        self.updates = OrderedDict()
+
         for param in self.params:
             init = np.zeros(param.get_value(borrow=True).shape,
                             dtype=theano.config.floatX)
@@ -271,7 +295,7 @@ class MetaRNN(BaseEstimator):
 
     def __getstate__(self):
         """ Return state sequence."""
-        params = self._get_params()  # parameters set in constructor
+        params = self.get_params()  # parameters set in constructor
         weights = [p.get_value() for p in self.rnn.params]
         state = (params, weights)
         return state
@@ -390,7 +414,8 @@ class MetaRNN(BaseEstimator):
             gparam = T.grad(cost, param)
             gparams.append(gparam)
 
-        updates = {}
+        # updates = {}
+        updates = OrderedDict()
         for param, gparam in zip(self.rnn.params, gparams):
             weight_update = self.rnn.updates[param]
             upd = mom * weight_update - l_r * gparam

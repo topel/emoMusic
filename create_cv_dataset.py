@@ -43,7 +43,7 @@ def write_folds_to_mat_files(normed_folds, num_folds):
         # save to MAT
         sio.savemat('train/matfiles/fold%d_normed.mat'%(fold), data, oned_as='row')
 
-def write_folds_to_pickle_files(normed_folds, num_folds, DATADIR):
+def write_folds_to_pickle_files(normed_folds, num_folds, DATADIR, doNormalize):
 
     import cPickle as pickle
     for fold in xrange(num_folds):
@@ -54,13 +54,20 @@ def write_folds_to_pickle_files(normed_folds, num_folds, DATADIR):
         data['test'] = normed_folds[fold][1]
 
         # save to pickle file
-        pickle.dump( data, open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold), "wb" ) )
-
+        if doNormalize:
+            nom = DATADIR + '/pkl/fold%d_normed.pkl'%(fold)
+            pickle.dump( data, open( nom, "wb" ) )
+            print ' ... output file: %s'%(nom)
+        else:
+            nom = DATADIR + '/pkl/fold%d_NOT_normed.pkl'%(fold)
+            pickle.dump( data, open( nom, "wb" ) )
+            print ' ... output file: %s'%(nom)
 
 if __name__ == '__main__':
     NUM_FRAMES = 60
-    # DATADIR = '/baie/corpus/emoMusic/train/'
-    DATADIR = './train/'
+    DATADIR = '/baie/corpus/emoMusic/train/'
+    # DATADIR = './train/'
+    doNormalize = False
 
     metadatafile = DATADIR + 'annotations/metadata.csv'
     list_genres_of_interest_file = DATADIR + 'annotations/categories.lst'
@@ -76,15 +83,20 @@ if __name__ == '__main__':
     folds = create_folds(song_data_dict, num_folds)
     # print len(folds[0][0]), len(folds[0][1])
 
-    print '... normalizing folds ...'
-    normed_folds = standardize_folds(folds)
+    if doNormalize:
+        print '... normalizing folds ...'
+        normed_folds = standardize_folds(folds)
 
     # print '... writing folds to MAT files ...'
     # write_folds_to_mat_files(normed_folds, num_folds)
 
-    print '... writing folds to pickle files ...'
-    write_folds_to_pickle_files(normed_folds, num_folds, DATADIR)
+        print '... writing folds to pickle files ...'
+        write_folds_to_pickle_files(normed_folds, num_folds, DATADIR, doNormalize)
 
-    import cPickle as pickle
-    fold_id = 0
-    fold0 = pickle.load( open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )
+    else:
+        print '... writing folds to pickle files ...'
+        write_folds_to_pickle_files(folds, num_folds, DATADIR, doNormalize)
+
+    # import cPickle as pickle
+    # fold_id = 0
+    # fold0 = pickle.load( open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )

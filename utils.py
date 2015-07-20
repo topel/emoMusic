@@ -293,33 +293,98 @@ def load_X_from_fold(fold, subset):
             y_ = np.vstack((y_, tmp))
     return X_,  y_, np.array(song_ids, dtype=int)
 
-def load_X_from_fold_to_3dtensor(fold, subset):
+def load_X_from_fold_to_3dtensor(fold, subset, out_dim):
     song_ids = list()
     # nb of samples in subset: we substract 2 for the 'mean' and 'std' items
-    nb_of_items = len(fold[subset]) - 2
+    if subset == 'train':
+        nb_of_items = len(fold[subset]) - 2
+    else:
+        nb_of_items = len(fold[subset])
+
+    # print nb_of_items
+
     # pick an item to get dimensions
     tmp = fold[subset].itervalues().next()
     frame_dim, feature_dim = tmp['X'].shape
     X_ = np.zeros((nb_of_items, frame_dim, feature_dim), dtype = float)
-    # continue....
+    y_ = np.zeros((nb_of_items, frame_dim, out_dim), dtype = float)
 
 
-    y_ = None
+    ind_sequence = 0
     for k, v in fold[subset].iteritems():
         if (k == 'std' or k == 'mean'):
             continue
         song_ids.append(k)
         val = np.array(v['valence'], dtype=float)
         ar = np.array(v['arousal'], dtype=float)
-        tmp = np.hstack((val[:,np.newaxis], ar[:,np.newaxis]))
 
-        if X_ is None:
-            X_ = v['X']
-            y_ = tmp
-        else:
-            X_ = np.vstack((X_, v['X']))
-            y_ = np.vstack((y_, tmp))
+        X_[ind_sequence] =v['X']
+        y_[ind_sequence] = np.hstack((val[:,np.newaxis], ar[:,np.newaxis]))
+        ind_sequence += 1
     return X_,  y_, np.array(song_ids, dtype=int)
+
+def load_data_from_fold_to_3dtensor_and_genre_info(fold, subset, out_dim, expected_nb_of_genres):
+    song_ids = list()
+    # nb of samples in subset: we substract 2 for the 'mean' and 'std' items
+    # nb_of_items = len(fold[subset]) - 2
+    # pick an item to get dimensions
+    tmp = fold[subset].itervalues().next()
+    frame_dim, feature_dim = tmp['X'].shape
+
+    list_num_genre = list()
+    for k, v in fold[subset].iteritems():
+        if (k == 'std' or k == 'mean'):
+            continue
+        list_num_genre.append(v['genrenum'])
+
+    flatten_list_num_genre = [item for sublist in list_num_genre for item in sublist]
+    nb_of_items =len(flatten_list_num_genre)
+
+    set_num_genre = set(flatten_list_num_genre)
+    nb_of_genre = len(set_num_genre)
+    if nb_of_genre < expected_nb_of_genres:
+        nb_of_genre = expected_nb_of_genres
+
+    X_ = np.zeros((nb_of_items, frame_dim, feature_dim), dtype = float)
+    y_ = np.zeros((nb_of_items, frame_dim, out_dim), dtype = float)
+    genre_indexes = np.zeros((nb_of_genre, 2), dtype = int)
+
+# pour python: indexes begin 0
+    debut = 0
+
+# pour matlab: indexes begin 1
+    debut = 1
+    ind_sequence = 0
+    for genre in set_num_genre:
+        nb_seq_per_genre = 0
+        # print 'genre: %d'%(genre)
+        first_time = True
+        for k, v in fold[subset].iteritems():
+            if (k == 'std' or k == 'mean'):
+                continue
+
+            seq_genres = v['genrenum']
+
+            for seq_g in seq_genres:
+                if genre == seq_g:
+                    # print 'genre: %d, genrenum: %d, genre_str: %s, ind: %d, song_id: %s'%(genre, seq_g, v['genre'], ind_sequence, k)
+                    if first_time:
+                        genre_indexes[genre,0] = ind_sequence
+                        first_time = False
+                    song_ids.append(k)
+                    val = np.array(v['valence'], dtype=float)
+                    ar = np.array(v['arousal'], dtype=float)
+
+                    X_[ind_sequence,:,:] = v['X']
+                    y_[ind_sequence,:,:] = np.hstack((val[:,np.newaxis], ar[:,np.newaxis]))
+                    ind_sequence += 1
+                    nb_seq_per_genre += 1
+        print 'genre: %d nb_seqs: %d'%(genre, nb_seq_per_genre)
+        genre_indexes[genre,0] = debut
+        genre_indexes[genre,1] = debut + nb_seq_per_genre - 1
+        debut += nb_seq_per_genre
+
+    return X_,  y_, np.array(song_ids, dtype=int), genre_indexes
 
 def standardize(X, scaler=None):
     '''see http://scikit-learn.org/stable/modules/preprocessing.html'''
