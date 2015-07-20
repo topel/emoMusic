@@ -293,9 +293,17 @@ def load_X_from_fold(fold, subset):
             y_ = np.vstack((y_, tmp))
     return X_,  y_, np.array(song_ids, dtype=int)
 
-def load_X_from_fold_to_sequences(fold, subset):
+def load_X_from_fold_to_3dtensor(fold, subset):
     song_ids = list()
-    X_ = None
+    # nb of samples in subset: we substract 2 for the 'mean' and 'std' items
+    nb_of_items = len(fold[subset]) - 2
+    # pick an item to get dimensions
+    tmp = fold[subset].itervalues().next()
+    frame_dim, feature_dim = tmp['X'].shape
+    X_ = np.zeros((nb_of_items, frame_dim, feature_dim), dtype = float)
+    # continue....
+
+
     y_ = None
     for k, v in fold[subset].iteritems():
         if (k == 'std' or k == 'mean'):

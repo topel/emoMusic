@@ -9,15 +9,15 @@ import cPickle as pickle
 import theano
 from theano import tensor as T
 
-from utils import load_X, load_y, mix, standardize, add_intercept, evaluate, evaluate1d, load_X_from_fold
+from utils import load_X, load_y, mix, standardize, add_intercept, evaluate, evaluate1d, load_X_from_fold_to_3dtensor
 import matplotlib.pyplot as plt
 
 
 
 PURCENT = 5 # Purcentage of the set you want on the test set
 NUM_FRAMES = 60
-DATADIR = '/baie/corpus/emoMusic/train/'
-# DATADIR = './train/'
+# DATADIR = '/baie/corpus/emoMusic/train/'
+DATADIR = './train/'
 
 
 EMO='valence'
@@ -34,8 +34,8 @@ for fold_id in range(1):
     print '... loading FOLD %d'%fold_id
     fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )
 
-    X_train, y_train, id_train = load_X_from_fold(fold, 'train')
-    X_test, y_test, id_test = load_X_from_fold(fold, 'test')
+    X_train, y_train, id_train = load_X_from_fold_to_3dtensor(fold, 'train')
+    X_test, y_test, id_test = load_X_from_fold_to_3dtensor(fold, 'test')
 
     print id_test.shape
 
@@ -48,8 +48,8 @@ for fold_id in range(1):
     # 0: arousal, 1: valence
     if EMO == 'valence':
         print '... emotion: valence'
-        y_train = y_train[:,0]
-        y_test = y_test[:,0]
+        y_train = y_train[0:100,0]
+        y_test = y_test[0:100,0]
     else:
         print '... emotion: arousal'
         y_train = y_train[:,1]
@@ -63,7 +63,7 @@ for fold_id in range(1):
 
     n_hidden = 10
     n_in = nb_features
-    n_out = 2
+    n_out = 1 # try 2
     n_steps = NUM_FRAMES
     n_seq = 100
 
@@ -73,8 +73,8 @@ for fold_id in range(1):
     targets = np.zeros((n_seq, n_steps, n_out))
 
     targets[:, 1:, 0] = seq[:, :-1, 3]  # delayed 1
-    targets[:, 1:, 1] = seq[:, :-1, 2]  # delayed 1
-    targets[:, 2:, 2] = seq[:, :-2, 0]  # delayed 2
+#    targets[:, 1:, 1] = seq[:, :-1, 2]  # delayed 1
+#    targets[:, 2:, 2] = seq[:, :-2, 0]  # delayed 2
 
     targets += 0.01 * np.random.standard_normal(targets.shape)
 
