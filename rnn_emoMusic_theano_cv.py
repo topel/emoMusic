@@ -3,19 +3,19 @@ __author__ = 'thomas'
 import rnn_model
 
 import numpy as np
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
 import cPickle as pickle
-import datetime
 import logging
 import time
 import theano
-
-from utils import load_X, load_y, mix, standardize, add_intercept, evaluate, evaluate1d, load_X_from_fold_to_3dtensor
+from os import path, makedirs
 import matplotlib.pyplot as plt
+
+from utils import evaluate, load_X_from_fold_to_3dtensor
+# import settings
 
 logger = logging.getLogger(__name__)
 # logging.basicConfig(level=logging.INFO,filename='example.log')
+
 
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
@@ -24,27 +24,44 @@ NUM_FRAMES = 60
 NUM_OUTPUT = 2
 DATADIR = '/baie/corpus/emoMusic/train/'
 # DATADIR = './train/'
-MODELDIR = 'models/'
-LOGDIR = 'log/'
+
+doSaveModel = False
 
 EMO='valence'
 # EMO='arousal'
 
-# fold_id = 2
+# NN params
+n_hidden = 10
+n_epochs = 20
+lr = 0.001
+reg_coef = 0.01
+
+dir_name = 'nh%d_ne%d_lr%g_reg%g'%(n_hidden, n_epochs, lr, reg_coef)
+MODELDIR = 'rnn/' + dir_name + '/'
+LOGDIR = MODELDIR
+
+if not path.exists(MODELDIR):
+    makedirs(MODELDIR)
+
+print '... output dir: %s'%(MODELDIR)
+
+# # initialize global logger variable
+# print '... initializing global logger variable'
+# logger = logging.getLogger(__name__)
+# withFile = False
+# logger = settings.init(MODELDIR + 'train.log', withFile)
+
+# perf_file_name = LOGDIR + 'rnn_nh%d_ne%d_lr%g_reg%g.log'%(n_hidden, n_epochs, lr, reg_coef)
+perf_file_name = LOGDIR + 'performance.log'
+log_f = open(perf_file_name, 'w')
 
 all_fold_pred = list()
 all_fold_y_test = list()
 all_fold_id_test = list()
 
-n_hidden = 10
-n_epochs = 50
-lr = 0.001
-reg_coef = 0.01
 
-log_file_name = LOGDIR + 'rnn_nh%d_ne%d_lr%g_reg%g.log'%(n_hidden, n_epochs, lr, reg_coef)
-log_f = open(log_file_name, 'w')
-
-for fold_id in range(10):
+for fold_id in range(1):
+    fold_id = 6
     t0 = time.time()
 
     print '... loading FOLD %d'%fold_id
@@ -52,6 +69,7 @@ for fold_id in range(10):
 
     X_train, y_train, id_train = load_X_from_fold_to_3dtensor(fold, 'train', NUM_OUTPUT)
     X_test, y_test, id_test = load_X_from_fold_to_3dtensor(fold, 'test', NUM_OUTPUT)
+
     # print id_test.shape
 
     # X_train = X_train[0:100,:,:]
@@ -64,6 +82,7 @@ for fold_id in range(10):
 
     # X_test = X_train[119:119+y_test.shape[0],:]
     # y_test = y_train[119:119+y_test.shape[0]]
+
 
     print X_train.shape, y_train.shape, X_test.shape, y_test.shape
     nb_seq_train, nb_frames_train, nb_features_train = X_train.shape
@@ -101,8 +120,10 @@ for fold_id in range(10):
 
     model.fit(X_train, y_train, validation_frequency=validation_frequency)
 
-    model_name = MODELDIR + 'rnn_fold%d_nh%d_nepochs%d_lr%g_reg%g.pkl'%(fold_id, n_hidden, n_epochs, lr, reg_coef)
-    model.save(fpath=model_name)
+    if doSaveModel:
+        # model_name = MODELDIR + 'rnn_fold%d_nh%d_nepochs%d_lr%g_reg%g.pkl'%(fold_id, n_hidden, n_epochs, lr, reg_coef)
+        model_name = MODELDIR + 'model_fold%d.pkl'%(fold_id)
+        model.save(fpath=model_name)
 
     pred = list()
     for ind_seq_test in xrange(nb_seq_test):

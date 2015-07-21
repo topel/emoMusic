@@ -8,15 +8,12 @@ PearsonCorr valence : 0.6091
 
 linreg_sm
 features: all (260)
-RMSE arousal : 0.2541
-PearsonCorr arousal : 0.6453
-RMSE valence : 0.2722
-PearsonCorr valence : 0.6403
+valence: 0.2722 0.6403 arousal: 0.2541 0.6453
 
 linreg_theano
 do_regularize = False
 features: all (260)
-RMSE arousal : 0.2539
-PearsonCorr arousal : 0.6465
-RMSE valence : 0.2753
-PearsonCorr valence : 0.6368
+valence: 0.2753 0.6368 arousal: 0.2539 0.6465
+
+rnn
+nh10_nepochs50_lr0.001_reg0.01 allfolds valence: 0.2608 0.6749 arousal: 0.2457 0.6703

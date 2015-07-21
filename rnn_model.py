@@ -13,32 +13,36 @@ import os
 import datetime
 import cPickle as pickle
 from collections import OrderedDict
+import matplotlib.pyplot as plt
+plt.ion()
+import settings
+
+from sklearn.utils import shuffle
 
 logger = logging.getLogger(__name__)
-
-# logger = logging.getLogger(__name__)
-# logging.basicConfig(level=logging.INFO,filename='example.log')
-
+# settings.init()
+# settings.init('bob', False)
+log_file_name = 'train.log'
 log_level=logging.INFO
 logger.setLevel(log_level)
-# create file handler which logs even debug messages
-fh = logging.FileHandler('rnn_training.log')
-fh.setLevel(log_level)
-# create console handler with a higher log level
+
+# create console handler
 ch = logging.StreamHandler()
 ch.setLevel(log_level)
 # create formatter and add it to the handlers
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-# add the handlers to the logger
-logger.addHandler(fh)
 logger.addHandler(ch)
+ch.setFormatter(formatter)
+withFile = False
+if withFile:
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler(log_file_name)
+    fh.setLevel(log_level)
+    fh.setFormatter(formatter)
+    # add the handlers to the logger
+    logger.addHandler(fh)
 
 
-
-import matplotlib.pyplot as plt
-plt.ion()
 
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
@@ -441,6 +445,11 @@ class MetaRNN(BaseEstimator):
 
         while (epoch < self.n_epochs):
             epoch = epoch + 1
+            X_train, Y_train = shuffle(X_train, Y_train, random_state=0)
+            train_set_x, train_set_y = self.shared_dataset((X_train, Y_train))
+
+            # logger.info('n_train = %d'%(n_train))
+
             for idx in xrange(n_train):
                 effective_momentum = self.final_momentum \
                                if epoch > self.momentum_switchover \
