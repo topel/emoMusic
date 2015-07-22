@@ -42,13 +42,11 @@ mel_f = np.convolve(mel[:,1], wts, mode='same')
 mel_f = np.vstack((mel[:,0],mel_f))
 mel_f = mel_f.T
 
-# print mel[0:10,:]
-# # print mel_f.shape
-# print mel_f[0:10,:]
+# plt.figure()
+# plt.subplot(2,1,1)
+# plt.plot(mel[:,1])
+# plt.subplot(2,1,2)
+# plt.plot(mel_f[:,1])
+# plt.show()
 
-plt.figure()
-plt.subplot(2,1,1)
-plt.plot(mel[:,1])
-plt.subplot(2,1,2)
-plt.plot(mel_f[:,1])
-plt.show()
+np.save('%d_vamp_mtg-melodia_melodia_melody.npy'%(song_id), mel_f)
