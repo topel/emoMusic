@@ -5,6 +5,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 from subprocess import Popen, PIPE
 
+
+def compute_lin_reg(frame):
+    '''
+    :param frame: np array with col1 = time, col2 = feature values
+    :return: slope and intercept terms
+    '''
+    sxy=np.dot(frame[:,0], frame[:,1].T)
+    sx = np.sum(frame[:,0])
+    sy = np.sum(frame[:,1])
+    n = frame.shape[0]
+    num = n * sxy - sx * sy
+    sx2 = np.dot(frame[:,0], frame[:,0].T)
+    den = frame.shape[0]*sx2 - sx*sx
+    slope = num / den
+    intercept = (sy - slope * sx) / (1. * n)
+    return slope, intercept
+
 song_id=250
 annotator = '/home/thomas/software/sonic-annotator-1.1/sonic-annotator'
 plugin='vamp:mtg-melodia:melodia:melody'
@@ -49,4 +66,20 @@ mel_f = mel_f.T
 # plt.plot(mel_f[:,1])
 # plt.show()
 
-np.save('%d_vamp_mtg-melodia_melodia_melody.npy'%(song_id), mel_f)
+# np.save('%d_vamp_mtg-melodia_melodia_melody.npy'%(song_id), mel_f)
+slopes = list()
+for t in xrange(30,90,1):
+    deb = t / 2.0
+    fin = (t + 1) / 2.0
+    mask = (mel_f[:,0]>deb) & (mel_f[:,0]<fin)
+    frame = mel_f[mask,:]
+    a, b = compute_lin_reg(frame)
+    print deb, a, b
+    slopes.append(a)
+
+# a, b = compute_lin_reg(frame)
+# y = map(lambda x: a*x+b, frame[:,0])
+# plt.plot(frame[:,0], y, '-r')
+# plt.plot(frame[:,0], frame[:,1], '-r')
+
+
