@@ -22,7 +22,7 @@ def plot_valence_arousal(song_data_dict, songid=3):
 def write_folds_to_mat_files(normed_folds, num_folds):
     import scipy.io as sio
     for fold in xrange(num_folds):
-        ' ... creating MAT file for fold: %d ...'%(fold)
+        print ' ... creating MAT file for fold: %d ...'%(fold)
         train_fold_for_matlab = dict()
         test_fold_for_matlab = dict()
         data = dict()
@@ -47,7 +47,7 @@ def write_folds_to_pickle_files(normed_folds, num_folds, DATADIR, doNormalize):
 
     import cPickle as pickle
     for fold in xrange(num_folds):
-        ' ... creating pickle file for fold: %d ...'%(fold)
+        print ' ... creating pickle file for fold: %d ...'%(fold)
 
         data = dict()
         data['train'] = normed_folds[fold][0]

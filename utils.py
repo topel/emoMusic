@@ -318,7 +318,7 @@ def load_X_from_fold_to_3dtensor(fold, subset, out_dim):
         val = np.array(v['valence'], dtype=float)
         ar = np.array(v['arousal'], dtype=float)
 
-        X_[ind_sequence] =v['X']
+        X_[ind_sequence] = v['X']
         y_[ind_sequence] = np.hstack((val[:,np.newaxis], ar[:,np.newaxis]))
         ind_sequence += 1
     return X_,  y_, np.array(song_ids, dtype=int)
@@ -446,7 +446,6 @@ def mix(X, y, purcent, num_frames, song_id, nb_of_songs):
 def evaluate(y_test, y_hat, tst_song):
     # # The mean square error
     # MSE = np.mean((y_hat - y_test) ** 2, axis=0)
-    # # MSE = np.mean(np.sqrt((y_hat - y_test) ** 2),axis=0)
     # RMSE = np.sqrt(MSE)
 
     diff = np.sqrt((y_hat - y_test)**2)
@@ -481,3 +480,60 @@ def evaluate1d(y_test, y_hat, tst_song):
 
     return RMSE, pcorr, error_per_song, mean_per_song
 
+def subset_features(feature_dict, song_id_train, song_id_test):
+
+    # allocate feat_train and feat_test
+    nb_seq_train = len(song_id_train)
+    nb_seq_test = len(song_id_test)
+    nb_features = 0
+    frame_dim = 60
+
+    # to get dimensions, pick up a single song
+    one_song = feature_dict.itervalues().next()
+    for k, v in one_song.iteritems():
+        sh_ = v.shape
+        if (len(sh_)  == 2):
+            frame_dim, feature_dim = v.shape
+        else:
+            feature_dim = 1
+        nb_features += feature_dim
+
+    print 'frame_dim=%d, nb_features=%d'%(frame_dim, nb_features)
+    # allocate result arrays
+    feat_train = np.zeros((nb_seq_train, frame_dim, nb_features))
+    feat_test = np.zeros((nb_seq_test, frame_dim, nb_features))
+
+    # fulfill them
+    train_ind = 0
+    for id in song_id_train:
+        feat_dict_per_song = feature_dict['%d'%id]
+        tmp = None
+        for _, feat in feat_dict_per_song.iteritems():
+            if tmp == None:
+                if len(feat.shape) == 1:
+                    feat = feat[:, np.newaxis]
+                tmp = feat
+            else:
+                if len(feat.shape) == 1:
+                    feat = feat[:, np.newaxis]
+                tmp = np.hstack((tmp, feat))
+        feat_train[train_ind] = tmp
+        train_ind += 1
+
+    test_ind = 0
+    for id in song_id_test:
+        feat_dict_per_song = feature_dict['%d'%id]
+        tmp = None
+        for _, feat in feat_dict_per_song.iteritems():
+            if tmp == None:
+                if len(feat.shape) == 1:
+                    feat = feat[:, np.newaxis]
+                tmp = feat
+            else:
+                if len(feat.shape) == 1:
+                    feat = feat[:, np.newaxis]
+                tmp = np.hstack((tmp, feat))
+        feat_test[test_ind] = tmp
+        test_ind += 1
+
+    return feat_train, feat_test

@@ -17,3 +17,8 @@ valence: 0.2753 0.6368 arousal: 0.2539 0.6465
 
 rnn
 nh10_nepochs50_lr0.001_reg0.01 allfolds valence: 0.2608 0.6749 arousal: 0.2457 0.6703
+
+kPCA -> 9941 features
+allfolds valence: 0.2604 0.6780 arousal: 0.2527 0.6584
+
+

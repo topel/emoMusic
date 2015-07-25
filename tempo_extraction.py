@@ -7,9 +7,9 @@ import time
 from os import path
 
 annotator = '/home/thomas/software/sonic-annotator-1.1/sonic-annotator'
-plugin='vamp:mtg-melodia:melodia:melody'
+plugin='vamp:vamp-example-plugins:fixedtempo:tempo'
 feature_dir='/baie/corpus/emoMusic/train/vamp_features'
-melody_dir = feature_dir + '/melody'
+tempo_dir = feature_dir + '/tempo'
 DATADIR = '/baie/corpus/emoMusic/train/'
 
 data = dict()
@@ -22,7 +22,7 @@ if doExtractMelody:
     for song_id in song_ids:
 
         audio_file='/baie/corpus/emoMusic/train/audio/%d.mp3'%(song_id)
-        output = melody_dir + '/%d_vamp_mtg-melodia_melodia_melody.csv'%(song_id)
+        output = tempo_dir + '/%d_vamp_vamp-example-plugins_fixedtempo_tempo.csv'%(song_id)
 
         if path.isfile(output):
             print '%s already exists'%(output)
@@ -32,10 +32,11 @@ if doExtractMelody:
         # feat, stdout_messages = proc.communicate()
 
         start_time = time.time()
-        cline = [annotator, '-d', plugin, audio_file, '-w', 'csv', '--csv-basedir', melody_dir]
+        cline = [annotator, '-d', plugin, audio_file, '-w', 'csv', '--csv-basedir', tempo_dir]
         subprocess.call(cline)
         # proc = Popen(cline, stdout=PIPE, stderr=PIPE)
         # _, stdout_messages = proc.communicate()
 
-        print("--- Melody extraction (VAMP): %.2f seconds ---" % (time.time() - start_time))
+        print("--- TEMPO extraction (VAMP): %.2f seconds ---" % (time.time() - start_time))
+
 

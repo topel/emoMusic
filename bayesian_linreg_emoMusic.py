@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 
 PURCENT = 5 # Purcentage of the set you want on the test set
 NUM_FRAMES = 60
-# DATADIR = '/baie/corpus/emoMusic/train/'
-DATADIR = './train/'
+DATADIR = '/baie/corpus/emoMusic/train/'
+# DATADIR = './train/'
 
 do_regularize = False
 
@@ -50,5 +50,5 @@ with Model() as model:
     glm.glm('y ~ x', data)
     start = find_MAP()
     step = NUTS(scaling=start) # Instantiate MCMC sampling algorithm
-    trace = sample(2000, step, progressbar=False) # draw 2000 posterior samples using NUTS sampling
+    trace = sample(100, step, progressbar=False) # draw 2000 posterior samples using NUTS sampling
 

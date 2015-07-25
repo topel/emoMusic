@@ -76,7 +76,7 @@ class RNN(object):
             self.softmax = T.nnet.softmax
 
         # recurrent weights as a shared variable
-        W_init = np.asarray(np.random.uniform(size=(n_hidden, n_hidden),
+        W_init = np.asarray(np.random.uniform(size=(n_out, n_hidden),
                                               low=-.01, high=.01),
                                               dtype=theano.config.floatX)
         self.W = theano.shared(value=W_init, name='W')
@@ -101,8 +101,11 @@ class RNN(object):
         by_init = np.zeros((n_out,), dtype=theano.config.floatX)
         self.by = theano.shared(value=by_init, name='by')
 
-        self.params = [self.W, self.W_in, self.W_out, self.h0,
-                       self.bh, self.by]
+        y0_init = np.zeros((n_out,), dtype=theano.config.floatX)
+        self.y0 = theano.shared(value=y0_init, name='y0')
+
+        self.params = [self.W, self.W_in, self.W_out,
+                       self.bh, self.by, self.y0]
 
         # for every parameter, we maintain it's last update
         # the idea here is to use "momentum"
@@ -117,18 +120,21 @@ class RNN(object):
 
         # recurrent function (using tanh activation function) and linear output
         # activation function
-        def step(x_t, h_tm1):
+        def step(x_t, y_tm1):
             h_t = self.activation(T.dot(x_t, self.W_in) + \
-                                  T.dot(h_tm1, self.W) + self.bh)
+                                  T.dot(y_tm1, self.W) + self.bh)
             y_t = T.dot(h_t, self.W_out) + self.by
             return h_t, y_t
 
+        # [h, s], _ = theano.scan(fn=recurrence, \
+        #     sequences=x, outputs_info=[None, self.s0], \
+        #     n_steps=x.shape[0])
 
         # the hidden state `h` for the entire sequence, and the output for the
         # entire sequence `y` (first dimension is always time)
-        [self.h, self.y_pred], _ = theano.scan(step,
+        [self.h, self.y_pred], _ = theano.scan(fn=step,
                                                sequences=self.input,
-                                               outputs_info=[self.h0, None])
+                                               outputs_info=[None, self.y0])
 
         # L1 norm ; one regularization option is to enforce L1 norm to
         # be small
