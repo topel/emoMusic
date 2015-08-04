@@ -10,6 +10,7 @@ import time
 import theano
 from os import path, makedirs
 import matplotlib.pyplot as plt
+from scipy import stats
 
 from utils import evaluate, load_X_from_fold_to_3dtensor, subset_features, standardize
 
@@ -22,39 +23,90 @@ logger = logging.getLogger(__name__)
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
 
-NUM_FRAMES = 60
-NUM_OUTPUT = 2
-DATADIR = '/baie/corpus/emoMusic/train/'
-# DATADIR = './train/'
-nb_features = 260
+def load_folds(data_dir, useEssentia=False):
+    folds = list()
+    for fold_id in range(10):
+        print '... loading FOLD %d'%fold_id
+        if useEssentia:
+            fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed_essentia.pkl'%(fold_id), "rb" ) )
 
-useMelodyFeatures = False
-if useMelodyFeatures:
-    nom = DATADIR + '/pkl/melody_features.pkl'
-    all_song_melody_features = pickle.load( open( nom, "rb" ) )
-    nb_features += 3
+        else:
+            fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )
+        folds.append(fold)
 
-useTempoFeatures = False
-if useTempoFeatures:
-    nom = DATADIR + '/pkl/fixedtempo_features.pkl'
-    all_song_tempo_features = pickle.load( open( nom, "rb" ) )
-    nb_features += 1
+    return folds
 
-EMO='valence'
-# EMO='arousal'
+def add_essentia_features(folds, essentia_folds, feature_indices_list):
+    new_folds = list()
+    for fold_id in range(10):
+        # fold_id = 0
+        fold = folds[fold_id]
+        X_train, y_train, id_train = load_X_from_fold_to_3dtensor(fold, 'train', NUM_OUTPUT)
+        X_test, y_test, id_test = load_X_from_fold_to_3dtensor(fold, 'test', NUM_OUTPUT)
 
-# # NN params
-# n_hidden = 10
-# n_epochs = 100
-# lr = 0.001
-# reg_coef = 0.01
+        essentia_fold = essentia_folds[fold_id]
+        essentia_X_train = essentia_fold['train']['X']
+        essentia_X_test = essentia_fold['test']['X']
 
-def rnn_cv(
-n_hidden,
-n_epochs,
-lr,
-reg_coef
-):
+        for seg in feature_indices_list:
+            deb = seg[0]
+            fin = seg[1]
+            X_train = np.concatenate((X_train, essentia_X_train[:,:,deb:fin]), axis=2)
+            X_test = np.concatenate((X_test, essentia_X_test[:,:,deb:fin]), axis=2)
+
+        print X_train.shape
+        data = dict()
+        data['train'] = dict()
+        data['train']['X'] = X_train
+        data['train']['y'] = y_train
+        data['train']['song_id'] = id_train
+        data['test'] = dict()
+        data['test']['X'] = X_test
+        data['test']['y'] = y_test
+        data['test']['song_id'] = id_test
+
+        new_folds.append(data)
+    return new_folds
+
+
+def remove_features(folds, feature_indices_list):
+    new_folds = list()
+
+    bool_feature_mask = np.ones(260)
+    for seg in feature_indices_list:
+        deb = seg[0]
+        fin = seg[1]
+        bool_feature_mask[deb:fin] = 0
+    bool_feature_mask = bool_feature_mask == 1
+
+    for fold_id in range(10):
+        # fold_id = 0
+        fold = folds[fold_id]
+        X_train, y_train, id_train = load_X_from_fold_to_3dtensor(fold, 'train', NUM_OUTPUT)
+        X_test, y_test, id_test = load_X_from_fold_to_3dtensor(fold, 'test', NUM_OUTPUT)
+
+        X_train = X_train[:,:,bool_feature_mask]
+        X_test = X_test[:,:,bool_feature_mask]
+
+        print X_train.shape, X_test.shape
+
+        data = dict()
+        data['train'] = dict()
+        data['train']['X'] = X_train
+        data['train']['y'] = y_train
+        data['train']['song_id'] = id_train
+        data['test'] = dict()
+        data['test']['X'] = X_test
+        data['test']['y'] = y_test
+        data['test']['song_id'] = id_test
+
+        new_folds.append(data)
+    return new_folds
+
+
+
+
+def rnn_cv( folds, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.01):
 
     doSaveModel = False
 
@@ -83,13 +135,25 @@ reg_coef
 
     for fold_id in range(10):
         # fold_id = 0
+        fold = folds[fold_id]
         t0 = time.time()
 
-        print '... loading FOLD %d'%fold_id
-        fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )
+        # print '... loading FOLD %d'%fold_id
+        # if useEssentia:
+            # fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed_essentia.pkl'%(fold_id), "rb" ) )
+        X_train = fold['train']['X']
+        y_train = fold['train']['y']
+        id_train = fold['train']['song_id']
 
-        X_train, y_train, id_train = load_X_from_fold_to_3dtensor(fold, 'train', NUM_OUTPUT)
-        X_test, y_test, id_test = load_X_from_fold_to_3dtensor(fold, 'test', NUM_OUTPUT)
+        X_test = fold['test']['X']
+        y_test = fold['test']['y']
+        id_test = fold['test']['song_id']
+
+        # else:
+        #     # fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )
+        #     X_train, y_train, id_train = load_X_from_fold_to_3dtensor(fold, 'train', NUM_OUTPUT)
+        #     X_test, y_test, id_test = load_X_from_fold_to_3dtensor(fold, 'test', NUM_OUTPUT)
+
 
         print X_train.shape, y_train.shape, X_test.shape, y_test.shape
 
@@ -171,7 +235,7 @@ reg_coef
         validation_frequency = nb_seq_train * 2 # for logging during training: every 2 epochs
 
         model = rnn_model.MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
-                        learning_rate=lr, learning_rate_decay=0.999,
+                        learning_rate=lr, learning_rate_decay=lrd,
                         L1_reg=reg_coef, L2_reg=reg_coef,
                         n_epochs=n_epochs, activation='tanh')
 
@@ -273,6 +337,20 @@ reg_coef
 
     print all_fold_pred.shape, all_fold_y_test.shape
 
+    # save predictions
+    pred_file = LOGDIR + 'all_predictions.pkl'
+    pickle.dump( all_fold_pred, open( pred_file, "wb" ) )
+    print ' ... all predictions saved in: %s'%(pred_file)
+    # ref_file = 'rnn/all_groundtruth.pkl'
+    # pickle.dump( all_fold_y_test, open( ref_file, "wb" ) )
+
+    # compute t-test p-values with baseline predictions
+    baseline_prediction_file = 'rnn/all_baseline_predictions_260feat.pkl'
+    baseline_preds = pickle.load(open( baseline_prediction_file, 'r' ))
+
+    pvalue_val = stats.ttest_ind(baseline_preds[:,0], all_fold_pred[:,0])[1]
+    pvalue_ar = stats.ttest_ind(baseline_preds[:,1], all_fold_pred[:,1])[1]
+    pvalues = (pvalue_val, pvalue_ar)
     RMSE, pcorr, error_per_song, mean_per_song = evaluate(all_fold_y_test, all_fold_pred, 0)
 
     # print(
@@ -283,11 +361,110 @@ reg_coef
     # )
 
     s = (
-            'allfolds valence: %.4f %.4f arousal: %.4f %.4f\n'
-          % (RMSE[0], pcorr[0][0], RMSE[1], pcorr[1][0])
+            'allfolds valence: %.4f %.4f arousal: %.4f %.4f p-values: %.4f, %.4f\n'
+          % (RMSE[0], pcorr[0][0], RMSE[1], pcorr[1][0], pvalue_val, pvalue_ar)
     )
 
     print s
     log_f.write(s)
     log_f.close()
-    return RMSE, pcorr
+    return RMSE, pcorr, pvalues
+
+if __name__ == '__main__':
+
+    NUM_FRAMES = 60
+    NUM_OUTPUT = 2
+    DATADIR = '/baie/corpus/emoMusic/train/'
+    # DATADIR = './train/'
+
+    useEssentia = False
+    if useEssentia:
+        nb_features = 196 # essentia features
+    else:
+        nb_features = 260
+
+    # nb_features += 260
+
+    useMelodyFeatures = False
+    if useMelodyFeatures:
+        nom = DATADIR + '/pkl/melody_features.pkl'
+        all_song_melody_features = pickle.load( open( nom, "rb" ) )
+        nb_features += 3
+
+    useTempoFeatures = False
+    if useTempoFeatures:
+        nom = DATADIR + '/pkl/fixedtempo_features.pkl'
+        all_song_tempo_features = pickle.load( open( nom, "rb" ) )
+        nb_features += 1
+
+    EMO='valence'
+    # EMO='arousal'
+
+    essentia_feat_indices = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 21], [21, 61], [61, 88], [88, 89], [89, 90], [90, 93], [93, 133], [133, 134], [134, 135], [135, 138], [138, 162], [162, 163], [163, 164], [164, 167], [167, 180], [180, 186], [186, 192], [192, 193], [193, 194], [194, 195], [195, 196]]
+
+    baseline_feat_indices = [[0, 2], [2, 4], [4, 6], [6, 8], [8, 10], [10, 12], [12, 14], [14, 16],
+    [16, 18], [18, 20], [20, 72], [72, 74], [74, 76], [76, 78], [78, 80], [80, 82], [82, 84],
+    [84, 86], [86, 88], [88, 90], [90, 92], [92, 94], [94, 96], [96, 98], [98, 100], [100, 102],
+    [102, 130],
+    [130, 132], [132, 134], [134, 136], [136, 138], [138, 140], [140, 142], [142, 144], [144, 146], [146, 148], [148, 150],
+    [150, 202],
+    [202, 204], [204, 206], [206, 208], [208, 210], [210, 212], [212, 214],
+    [214, 216], [216, 218], [218, 220], [220, 222], [222, 224], [224, 226], [226, 228], [228, 230], [230, 232],
+    [232, 260]]
+
+    print 'useEssentia: %s'%(useEssentia)
+
+    # NN params
+    n_hidden = 10
+    n_epochs = 50
+    lr = 0.001
+    lrd = 0.999
+    reg_coef = 0.01
+
+    # load baseline folds
+    folds = load_folds(DATADIR)
+
+    if useEssentia:
+        essentia_folds = load_folds(DATADIR, useEssentia)
+        ajout_log_file_name = 'ajout_features_flatness_spectralValleys.log'
+        ajout_log_file = open(ajout_log_file_name, 'w')
+
+        # for ajout in range(len(essentia_feat_indices)):
+
+        feature_indices_list = list()
+        feature_indices_list.append([89, 90])
+        feature_indices_list.append([134, 135])
+        feature_indices_list.append([186, 192])
+        new_folds = add_essentia_features(folds, essentia_folds, feature_indices_list)
+        rmse, pcorr, pvalues = rnn_cv(new_folds, n_hidden, n_epochs, lr, lrd, reg_coef)
+        s = (
+        'allfolds valence: %.4f %.4f arousal: %.4f %.4f deb:%d, fin:%d\n'
+          % (rmse[0], pcorr[0][0], rmse[1], pcorr[1][0], feature_indices_list[0][0], feature_indices_list[0][1])
+        )
+        print s
+        ajout_log_file.write(s)
+        ajout_log_file.close()
+
+
+    else:
+        # rmse, pcorr, pvalue = rnn_cv(folds, n_hidden, n_epochs, lr, lrd, reg_coef)
+
+        retrait_log_file_name = 'retrait_baseline_features.log'
+        retrait_log_file = open(retrait_log_file_name, 'w')
+
+        # feature_indices_list = [[14, 16], [76, 132], [202, 232]]
+        feature_indices_list = [[84, 130]]
+        # for retrait in range(len(baseline_feat_indices)):
+        #     feature_indices_list = list()
+        #     feature_indices_list.append(baseline_feat_indices[retrait])
+        new_folds = remove_features(folds, feature_indices_list)
+        rmse, pcorr, pvalues = rnn_cv(new_folds, n_hidden, n_epochs, lr, lrd, reg_coef)
+        s = (
+        'allfolds valence: %.4f %.4f arousal: %.4f %.4f deb:%d, fin:%d p_values: %.3f %.3f\n'
+          % (rmse[0], pcorr[0][0], rmse[1], pcorr[1][0], feature_indices_list[0][0], feature_indices_list[0][1], pvalues[0], pvalues[1])
+        )
+        print s
+        retrait_log_file.write(s)
+
+        retrait_log_file.close()
+

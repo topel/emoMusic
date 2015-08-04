@@ -19,7 +19,7 @@ nb_features = 260
 from sklearn.decomposition import PCA, KernelPCA
 # pca = PCA(n_components=0.95, whiten='False')
 pca = KernelPCA(kernel="rbf", eigen_solver = 'auto')
-max_nb_samples = 10000 # number of samples to fit the kernel PCA model
+max_nb_samples = 10000 # number of samples to fit the kernel PCA model, if bigger then 1e+4 -> too big output dim
 
 for fold_id in range(1,10):
     # fold_id = 0

@@ -77,9 +77,6 @@ dissonance_algo = Dissonance()
 
 pitchsalience_algo = PitchSalience()
 
-# extract MFCCs with a pool
-pool = essentia.Pool()
-
 for audio_filename in listdir(AUDIO_DIR):
     print audio_filename
     song_id = splitext(basename(audio_filename))[0]
@@ -90,6 +87,8 @@ for audio_filename in listdir(AUDIO_DIR):
 
     # and then we actually perform the loading:
     audio = loader()
+    # extract features with a pool
+    pool = essentia.Pool()
 
     # for frame in FrameGenerator(audio, frameSize = 1024, hopSize = 512):
     for frame in FrameGenerator(audio, frameSize = 22050, hopSize = 22050):

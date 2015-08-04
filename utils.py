@@ -8,7 +8,7 @@ from scipy.stats.stats import pearsonr
 from sklearn import preprocessing
 import re
 from copy import deepcopy
-
+import subprocess
 
 def load_y(datadir):
     FILENAME = datadir + 'annotations/dynamic_arousals.csv'
@@ -203,6 +203,44 @@ def load_data_to_song_dict(metadatafile, genrelistfile, datadir, severalGenresPe
     data = create_song_dict(X, arousal, valence, song_id, genre, genre_num)
 
     return data
+
+def load_TEST_data_to_song_dict(metadatafile, datadir):
+
+    print 'loading song ids...'
+
+    test_metadata_dict = dict()
+    # keys=song_ids, values=filenames
+    with open(metadatafile, "rb") as infile:
+        reader = csv.reader(infile)
+        next(reader, None)  # skip the headers
+        for row in reader:
+            id = int(row[0])
+            test_metadata_dict['%d'%id] = row[1]
+
+
+# # create symbolic links to have song ids as file names:
+#     for id, fn in test_metadata_dict.iteritems():
+#         print 'linking %s to %s'%(fn, id)
+#         nom = datadir + 'openSMILE_features/' + fn + '.csv'
+#         new_nom = datadir + 'openSMILE_features/' + id + '.csv'
+#         cline = ['ln', '-s', nom, new_nom]
+#         subprocess.call(cline)
+
+    song_id = list()
+    [song_id.append(int(k)) for k in test_metadata_dict.keys()]
+
+    print 'loading X...'
+    X = load_X_to_dict(datadir, song_id)
+    print 'creating dict with keys=song_ids, values=X'
+    data = dict()
+    for id in song_id:
+        # print id, genre['%d'%id]
+        data['%d'%id] = dict()
+        data['%d'%id]['X'] = X['%d'%id]
+
+    return data
+
+
 
 def create_folds(data, num_folds):
     '''Create num_folds training and testing sets'''
