@@ -1,78 +1,77 @@
-__author__ = 'thomas'
-
 __author__ = 'tpellegrini'
 
 import numpy as np
-from utils import load_data_to_song_dict, create_folds, standardize_folds, standardize, add_intercept
-import matplotlib.pyplot as plt
+from utils import load_data_to_song_dict
+# import matplotlib.pyplot as plt
 from sklearn import preprocessing
 import cPickle as pickle
+import yaml
+from os import listdir
+from os.path import basename, splitext
 
-def plot_valence_arousal(song_data_dict, songid=3):
+def load_all_yaml(dir_, NUM_FRAMES):
+    print 'loading YAML files...'
 
-    song = song_data_dict['%d'%songid]
-    val = song['valence']
-    ar = song['arousal']
+    nb_loaded_files = 0
+    d_all_essentia = dict()
+    for yaml_filename in listdir(dir_):
+        nb_loaded_files += 1
 
-    plt.plot(val, ar, 'o')
-    plt.title('song: %d, genre: %s'%(songid, song['genre']))
-    axes = plt.gca()
-    axes.set_xlim([-1.,1.])
-    axes.set_ylim([-1.,1.])
-    plt.show()
-
-
-
-def write_folds_to_mat_files(normed_folds, num_folds):
-    import scipy.io as sio
-    for fold in xrange(num_folds):
-        print ' ... creating MAT file for fold: %d ...'%(fold)
-        train_fold_for_matlab = dict()
-        test_fold_for_matlab = dict()
-        data = dict()
-
-        for k, val in normed_folds[fold][0].iteritems():
-            if (k != 'std' and k != 'mean'):
-                new_key = 'song' + k
+        song_id = int(splitext(basename(yaml_filename))[0])
+        with open(dir_ + yaml_filename, 'r') as stream:
+            d_data = yaml.load(stream)
+        first = True
+        X = np.array([])
+        for featname in feature_names:
+            # print featname
+            tmp = np.array(d_data['lowlevel'][featname])
+            if len(tmp.shape) == 1:
+                tmp = tmp[:, np.newaxis]
+            tmp = tmp[0:NUM_FRAMES, :]
+            # remove first two central moments (std = 0)
+            if featname is 'central_moments_bark' or featname is 'central_moments_erb' or featname is 'central_moments_mel':
+                tmp = tmp[:, 2:]
+            # print 'shape(tmp): ', tmp.shape
+            if first:
+                X = tmp
+                first = False
+                # print X.shape
             else:
-                new_key = k
-            train_fold_for_matlab[new_key] = val
-        data['train'] = train_fold_for_matlab
+                X = np.hstack((X, tmp))
+                # print X.shape
 
-        for k, val in normed_folds[fold][1].iteritems():
-            new_key = 'song' + k
-            test_fold_for_matlab[new_key] = val
-        data['test'] = test_fold_for_matlab
+        d_all_essentia['%d'%(song_id)] = X
 
-        # save to MAT
-        sio.savemat('train/matfiles/fold%d_normed.mat'%(fold), data, oned_as='row')
+        if nb_loaded_files % 100 == 0:
+            print ' loaded: %d files'%(nb_loaded_files)
 
-def write_folds_to_pickle_files(normed_folds, num_folds, DATADIR, doNormalize):
-
-    import cPickle as pickle
-    for fold in xrange(num_folds):
-        print ' ... creating pickle file for fold: %d ...'%(fold)
-
-        data = dict()
-        data['train'] = normed_folds[fold][0]
-        data['test'] = normed_folds[fold][1]
-
-        # save to pickle file
-        if doNormalize:
-            nom = DATADIR + '/pkl/fold%d_normed.pkl'%(fold)
-            pickle.dump( data, open( nom, "wb" ) )
-            print ' ... output file: %s'%(nom)
-        else:
-            nom = DATADIR + '/pkl/fold%d_NOT_normed.pkl'%(fold)
-            pickle.dump( data, open( nom, "wb" ) )
-            print ' ... output file: %s'%(nom)
+    return d_all_essentia
 
 if __name__ == '__main__':
     NUM_FRAMES = 60
     NUM_OUTPUT = 2
     DATADIR = '/baie/corpus/emoMusic/train/'
     # DATADIR = './train/'
-    doNormalize = False
+    ESSENTIA_DIR = DATADIR + 'essentia_features/'
+    doUseEssentiaFeatures = True
+
+    # feature_names= ['loudness',
+    #                 'spectrum_rms','spectrum_flux','spectrum_centroid','spectrum_rolloff', 'spectrum_decrease',
+    #                 'hfc','zcr',
+    #                 'mfcc','mfcc_bands',
+    #                 'barkbands', 'crest_bark', 'flatnessdb_bark', 'central_moments_bark',
+    #                 'erbbands', 'crest_erb', 'flatnessdb_erb','central_moments_erb',
+    #                 'melbands','crest_mel','flatnessdb_mel','central_moments_mel',
+    #                 'gfcc','spectral_contrast','spectral_valley','dissonance','pitchsalience','spectral_complexity',
+    #                 'danceability']
+
+    feature_names= [ 'flatnessdb_bark', 'flatnessdb_erb', 'spectral_valley' ]
+
+    # not used: 'dynamic_complexity', first two elements of 'central_moments_bark', 'central_moments_erb', 'central_moments_mel'
+
+    if doUseEssentiaFeatures:
+        # load yaml files
+        d_all_essentia = load_all_yaml(ESSENTIA_DIR, NUM_FRAMES)
 
     metadatafile = DATADIR + 'annotations/metadata.csv'
     list_genres_of_interest_file = DATADIR + 'annotations/categories.lst'
@@ -104,6 +103,16 @@ if __name__ == '__main__':
         y_[ind_sequence] = np.hstack((val[:,np.newaxis], ar[:,np.newaxis]))
         ind_sequence += 1
 
+    if doUseEssentiaFeatures:
+        # add essentia features
+        essentia_X_ = list()
+        for id in song_ids:
+            essentia_X_.append(d_all_essentia[id])
+        essentia_X_ = np.array(essentia_X_)
+        X_ = np.concatenate((X_, essentia_X_), axis=2)
+
+    print X_.shape
+
     song_ids = np.array(song_ids, dtype=int)
 
     print '... saving to PKL file ... '
@@ -112,7 +121,11 @@ if __name__ == '__main__':
     data['train']['X'] = X_
     data['train']['y'] = y_
     data['train']['song_id'] = song_ids
-    nom = DATADIR + '/pkl/train_set_baseline_260features_431songs_NOT_normed.pkl'
+    if doUseEssentiaFeatures:
+        nom = DATADIR + '/pkl/train_set_baseline_268features_431songs_NOT_normed.pkl'
+    else:
+        nom = DATADIR + '/pkl/train_set_baseline_260features_431songs_NOT_normed.pkl'
+
     pickle.dump( data, open( nom, "wb" ) )
     print ' ... --> saved to: ** %s **'%(nom)
 
@@ -134,6 +147,10 @@ if __name__ == '__main__':
     data['train']['X'] = X_normed
     data['train']['y'] = y_
     data['train']['song_id'] = song_ids
-    nom = DATADIR + '/pkl/train_set_baseline_260features_431songs_normed.pkl'
+    if doUseEssentiaFeatures:
+        nom = DATADIR + '/pkl/train_set_baseline_268features_431songs_normed.pkl'
+    else:
+        nom = DATADIR + '/pkl/train_set_baseline_260features_431songs_normed.pkl'
+
     pickle.dump( data, open( nom, "wb" ) )
     print ' ... --> saved to: ** %s **'%(nom)

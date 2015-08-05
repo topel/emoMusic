@@ -7,8 +7,15 @@ from os.path import basename, splitext
 
 # we start by instantiating the audio loader:
 
-FEATURE_DIR = '/baie/corpus/emoMusic/train/essentia_features/'
-AUDIO_DIR = '/baie/corpus/emoMusic/train/audio/'
+FEATURE_DIR = '/baie/corpus/emoMusic/test/essentia_features2/'
+AUDIO_DIR = '/baie/corpus/emoMusic/test/audio/'
+
+# FEATURE_DIR = '/baie/corpus/emoMusic/train/essentia_features/'
+# AUDIO_DIR = '/baie/corpus/emoMusic/train/audio/'
+
+# after extracting the YAML files, convert the filenames to song_ids filenames:
+# bash  ./correspondance_test_filenames_song_ids.sh
+
 
 import matplotlib.pylab as plt
 
@@ -83,7 +90,11 @@ for audio_filename in listdir(AUDIO_DIR):
     audio_filename =  AUDIO_DIR + '%s'%(audio_filename)
     output_filename = FEATURE_DIR + '%s.yaml'%(song_id)
 
-    loader = EasyLoader(filename = audio_filename, startTime = 15)
+    # startTime = 15.0:
+    # loader = EasyLoader(filename = audio_filename, startTime = 15)
+
+    # startTime = 0.0:
+    loader = EasyLoader(filename = audio_filename)
 
     # and then we actually perform the loading:
     audio = loader()

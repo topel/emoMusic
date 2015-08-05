@@ -144,19 +144,12 @@ def remove_features(folds, feature_indices_list):
     return new_folds
 
 
-def rnn_cv( data, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.01):
+def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.01):
 
     doSaveModel = True
 
-    # dir_name = 'bis_nfeat%d_nh%d_ne%d_lr%g_reg%g'%(nb_features, n_hidden, n_epochs, lr, reg_coef)
-    # MODELDIR = 'rnn/' + dir_name + '/'
-    # MODELDIR = 'RNN_models/rnn1_baseline_260feat_nh10_ne50_lr0.001_reg0.01/'
-    MODELDIR = 'RNN_models/rnn2_predictions_as_features_rnn1_baseline_260feat_nh10_ne50_lr0.001_reg0.01/'
+    MODELDIR = output_model_dir
     LOGDIR = MODELDIR
-
-    if not path.exists(MODELDIR):
-        makedirs(MODELDIR)
-
     print '... model output dir: %s'%(MODELDIR)
 
     # # initialize global logger variable
@@ -213,7 +206,8 @@ def rnn_cv( data, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.0
 
     if doSaveModel:
         # model_name = MODELDIR + 'rnn_fold%d_nh%d_nepochs%d_lr%g_reg%g.pkl'%(fold_id, n_hidden, n_epochs, lr, reg_coef)
-        model_name = MODELDIR + 'model_baseline_predictions_as_features_431songs_normed.pkl'
+        # model_name = MODELDIR + 'model_baseline_predictions_as_features_431songs_normed.pkl'
+        model_name = MODELDIR + model_name
         model.save(fpath=model_name)
 
     pred = list()
@@ -223,7 +217,7 @@ def rnn_cv( data, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.0
     y_hat = np.array(pred, dtype=float)
 
     # save predictions as 3d tensors
-    pred_file = LOGDIR + 'predictions_train_set_baseline_predictions_as_features_431songs_normed.pkl'
+    # pred_file = LOGDIR + 'predictions_train_set_baseline_predictions_as_features_431songs_normed.pkl'
     pickle.dump( y_hat, open( pred_file, "wb" ) )
     print ' ... predictions saved in: %s'%(pred_file)
 
@@ -320,19 +314,47 @@ def rnn_cv( data, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.0
 
 if __name__ == '__main__':
 
-    # # train_file = '/baie/corpus/emoMusic/train/pkl/train_set_baseline_260features_431songs_NOT_normed.pkl'
-    train_file = '/baie/corpus/emoMusic/train/pkl/train_set_baseline_260features_431songs_normed.pkl'
-    train_data = pickle.load( open( train_file, "rb" ) )
-    # RMSE, pcorr = rnn_cv(train_data)
+    doUseEssentiaFeatures = True
+    doTrainFirstRNN = False
+    doTrainSecondRNN = True
 
-    # train a model with the predictions as features
-    print '... loading train set predictions ...'
-    predictions = 'RNN_models/rnn1_baseline_260feat_nh10_ne50_lr0.001_reg0.01/predictions_train_set_baseline_260features_431songs_normed.pkl'
-    data = pickle.load( open( predictions, 'rb' ) )
-    train_data2 = dict()
-    train_data2['train'] = dict()
-    train_data2['train']['X'] = data
-    train_data2['train']['y'] = train_data['train']['y']
-    train_data2['train']['song_id'] = train_data['train']['song_id']
+    if doUseEssentiaFeatures:
+        nb_features = 268
+    else:
+        nb_features = 260
 
-    RMSE, pcorr = rnn_cv( train_data2 )
+    print '... training with %d features ...'%(nb_features)
+    if doTrainFirstRNN:
+        train_file = '/baie/corpus/emoMusic/train/pkl/train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+        MODELDIR = 'RNN_models/rnn1_baseline_%dfeat_nh10_ne50_lr0.001_reg0.01/'%(nb_features)
+        model_file = 'model_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+        predictions = MODELDIR + 'predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+
+        if not path.exists(MODELDIR):
+            makedirs(MODELDIR)
+        train_data = pickle.load( open( train_file, "rb" ) )
+
+        RMSE, pcorr = rnn_cv(MODELDIR, model_file, predictions, train_data)
+
+    if doTrainSecondRNN:
+        # train a model with the predictions as features
+        train_file1 = '/baie/corpus/emoMusic/train/pkl/train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+        MODELDIR1 = 'RNN_models/rnn1_baseline_%dfeat_nh10_ne50_lr0.001_reg0.01/'%(nb_features)
+        MODELDIR2 = 'RNN_models/rnn2_predictions_as_features_rnn1_baseline_%dfeat_nh10_ne50_lr0.001_reg0.01/'%(nb_features)
+        model_file = 'model_baseline_predictions_as_features_431songs_normed.pkl'
+        predictions1 = MODELDIR1 + 'predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+        predictions2 = MODELDIR2 + 'predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+
+        if not path.exists(MODELDIR2):
+            makedirs(MODELDIR2)
+
+        train_data1 = pickle.load( open( train_file1, "rb" ) )
+        print '... loading train set predictions ...'
+        data = pickle.load( open( predictions1, 'rb' ) )
+        train_data2 = dict()
+        train_data2['train'] = dict()
+        train_data2['train']['X'] = data
+        train_data2['train']['y'] = train_data1['train']['y']
+        train_data2['train']['song_id'] = train_data1['train']['song_id']
+
+        RMSE, pcorr = rnn_cv( MODELDIR2, model_file, predictions2, train_data2 )

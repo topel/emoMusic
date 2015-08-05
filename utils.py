@@ -103,6 +103,26 @@ def load_X_to_dict(datadir, song_id):
 
     return X
 
+def load_test_X_to_dict(datadir, song_id):
+    # varying number of frame per song
+    print '... loading X to dict, keys=song_id, values=feature_vector'
+    X = dict()
+    for Id in song_id:
+        FILENAME = datadir + "openSMILE_features/%d.csv" %Id
+
+        with open(FILENAME, 'rb') as infile:
+            reader = csv.reader(infile, delimiter =";")
+            next(reader, None)  # skip the headers
+            X_temp = [ row for row in reader ]
+
+        num_features = len(X_temp[0])
+        num_col = len(X_temp)
+
+        X_temp_array = np.array([ [float(X_temp[k][l]) for l in range(1,num_features) ] for k in range(num_col)] )
+
+        X['%d'%Id] = X_temp_array
+
+    return X
 
 def load_X(datadir, song_id):
     # Number of frame per song
@@ -230,7 +250,7 @@ def load_TEST_data_to_song_dict(metadatafile, datadir):
     [song_id.append(int(k)) for k in test_metadata_dict.keys()]
 
     print 'loading X...'
-    X = load_X_to_dict(datadir, song_id)
+    X = load_test_X_to_dict(datadir, song_id)
     print 'creating dict with keys=song_ids, values=X'
     data = dict()
     for id in song_id:
@@ -239,7 +259,6 @@ def load_TEST_data_to_song_dict(metadatafile, datadir):
         data['%d'%id]['X'] = X['%d'%id]
 
     return data
-
 
 
 def create_folds(data, num_folds):
