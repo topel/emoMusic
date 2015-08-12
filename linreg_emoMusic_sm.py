@@ -18,8 +18,8 @@ import matplotlib.pyplot as plt
 
 PURCENT = 5 # Purcentage of the set you want on the test set
 NUM_FRAMES = 60
-DATADIR = '/baie/corpus/emoMusic/train/'
-# DATADIR = './train/'
+# DATADIR = '/baie/corpus/emoMusic/train/'
+DATADIR = './train/'
 
 
 EMO='valence'
