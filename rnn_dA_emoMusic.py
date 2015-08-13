@@ -252,7 +252,7 @@ def rnn_main( fold, n_hidden=10, n_epochs=100, lr=0.001, lrd = 0.999, reg_coef= 
     log_f.write(s)
 
     fold_prediction_file = 'AE/pred/fold%d.pkl'%(fold_id)
-    pickle.dump( y_test_concat, open( fold_prediction_file, "wb" ) )
+    pickle.dump( y_hat, open( fold_prediction_file, "wb" ) )
 
     doPlotTrain = False
     if doPlotTrain:
