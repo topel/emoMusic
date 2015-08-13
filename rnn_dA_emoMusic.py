@@ -146,7 +146,7 @@ def remove_features(folds, feature_indices_list):
 
 def rnn_main( fold, n_hidden=10, n_epochs=100, lr=0.001, lrd = 0.999, reg_coef= 0.01):
 
-    doSaveModel = False
+    doSaveModel = True
     MODELDIR = 'AE/models/'
     LOGDIR = MODELDIR
 
@@ -342,10 +342,12 @@ if __name__ == '__main__':
 
     print '... training with %d features ...'%(nb_features)
     cost_type = 'MSE'
-    noise_type = 'gaussian'
-    corruption_level=0.3
-    n_hidden=500
-    training_epochs=100
+#    noise_type = 'gaussian'
+    noise_type = 'binomial'
+    corruption_level=0.1
+#    n_hidden=500
+    n_hidden=200
+    training_epochs=200
     fold_id = 0
 
     act_dir = 'AE/activations/'
@@ -363,6 +365,6 @@ if __name__ == '__main__':
         data = pickle.load( open( data_file, "rb" ) )
     #    folds.append(data)
 
-        RMSE = rnn_main( data, n_hidden=500, n_epochs=100, lr=0.001, lrd = 0.999, reg_coef= 0.01)
+        RMSE = rnn_main( data, n_hidden=10, n_epochs=100, lr=0.001, lrd = 0.999, reg_coef= 0.01)
 
 

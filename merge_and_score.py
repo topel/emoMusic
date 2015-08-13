@@ -23,7 +23,7 @@ if __name__ == '__main__':
     # DATADIR = '/baie/corpus/emoMusic/train/'
     DATADIR = './train/'
 
-    pred_dir = 'AE/pred_gaussian_03/'
+    pred_dir = 'AE/pred/'
     cost_type = 'MSE'
     noise_type = 'gaussian'
     corruption_level=0.3
