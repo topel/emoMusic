@@ -4,8 +4,8 @@ import cPickle as pickle
 
 if __name__ == '__main__':
 
-    doUseEssentiaFeatures = False
-    doTrainFirstRNN = True
+    doUseEssentiaFeatures = True
+    doTrainFirstRNN = False
     if doTrainFirstRNN:
         doTrainSecondRNN = False
     else:
@@ -44,14 +44,25 @@ if __name__ == '__main__':
 
     if doTrainSecondRNN:
         MODELDIR2 = 'RNN_test/rnn2_predictions_as_features_rnn1_baseline_%dfeat_nh10_ne50_lr0.001_reg0.01/'%(nb_features)
-        predictions = MODELDIR2 + 'predictions_test_set_baseline_predictions_as_features_58songs_normed.pkl'
 
-        if doUseEssentiaFeatures:
-            output_valence = SUBMISSIONS_DIR + '4/me15em_IRIT-SAMOVA_rnn2x%dfeat_valence.csv'%(nb_features)
-            output_arousal = SUBMISSIONS_DIR + '4/me15em_IRIT-SAMOVA_rnn2x%dfeat_arousal.csv'%(nb_features)
+        if doSmoothing:
+            predictions = MODELDIR2 + 'smoothed_predictions_test_set_baseline_predictions_as_features_58songs_normed.pkl'
+
+            if doUseEssentiaFeatures:
+                output_valence = SUBMISSIONS_DIR + '4/me15em_IRIT-SAMOVA_rnn2x%dfeatSmoothed_valence.csv'%(nb_features)
+                output_arousal = SUBMISSIONS_DIR + '4/me15em_IRIT-SAMOVA_rnn2x%dfeatSmoothed_arousal.csv'%(nb_features)
+            else:
+                output_valence = SUBMISSIONS_DIR + '2/me15em_IRIT-SAMOVA_rnn2x%dfeatSmoothed_valence.csv'%(nb_features)
+                output_arousal = SUBMISSIONS_DIR + '2/me15em_IRIT-SAMOVA_rnn2x%dfeatSmoothed_arousal.csv'%(nb_features)
         else:
-            output_valence = SUBMISSIONS_DIR + '2/me15em_IRIT-SAMOVA_rnn2x%dfeat_valence.csv'%(nb_features)
-            output_arousal = SUBMISSIONS_DIR + '2/me15em_IRIT-SAMOVA_rnn2x%dfeat_arousal.csv'%(nb_features)
+            predictions = MODELDIR2 + 'predictions_test_set_baseline_predictions_as_features_58songs_normed.pkl'
+
+            if doUseEssentiaFeatures:
+                output_valence = SUBMISSIONS_DIR + '4/me15em_IRIT-SAMOVA_rnn2x%dfeat_valence.csv'%(nb_features)
+                output_arousal = SUBMISSIONS_DIR + '4/me15em_IRIT-SAMOVA_rnn2x%dfeat_arousal.csv'%(nb_features)
+            else:
+                output_valence = SUBMISSIONS_DIR + '2/me15em_IRIT-SAMOVA_rnn2x%dfeat_valence.csv'%(nb_features)
+                output_arousal = SUBMISSIONS_DIR + '2/me15em_IRIT-SAMOVA_rnn2x%dfeat_arousal.csv'%(nb_features)
 
 
     pred = pickle.load( open( predictions, "rb" ) )
