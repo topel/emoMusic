@@ -52,7 +52,7 @@ if __name__ == '__main__':
                 y_hat_smooth[:, 1] = np.convolve(y_hat[:, 1], wts, mode='same')
                 y_hat_smooth[:delay, 1] = y_hat[:delay, 1]
                 y_hat_smooth[-delay:, 1] = y_hat[-delay:, 1]
-                pred[id] = y_hat_smooth.tolist()
+                pred[id] = y_hat_smooth
 
         # save predictions
         pred_file = 'RNN_test/' + basename + '/smoothed_predictions_test_set_baseline_%dfeatures_58songs_normed.pkl'%(nb_features)
