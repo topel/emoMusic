@@ -6,7 +6,7 @@ import numpy as np
 
 if __name__ == '__main__':
 
-    doUseEssentiaFeatures = False
+    doUseEssentiaFeatures = True
     runFirstModel = True
     runSecondModel = False
     doSmoothing = True
@@ -19,6 +19,12 @@ if __name__ == '__main__':
     print '... using %d features ...'%(nb_features)
     print '... smoothing preds: %s ...'%(doSmoothing)
 
+    # smooth prediction params
+    taille = 12
+    wts = np.ones(taille-1)*1./taille
+    wts = np.hstack((np.array([1./(2*taille)]), wts, np.array([1./(2*taille)])))
+    delay = (wts.shape[0]-1) / 2
+
     if runFirstModel:
         # load the test dataset
         test_file = '/baie/corpus/emoMusic/test/pkl/test_set_baseline_%dfeatures_58songs_normed.pkl'%(nb_features)
@@ -30,12 +36,6 @@ if __name__ == '__main__':
         model_file = 'RNN_models/' + basename + '/model_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
         model = rnn_model.MetaRNN()
         model.load( model_file )
-
-        # smooth prediction params
-        taille = 12
-        wts = np.ones(taille-1)*1./taille
-        wts = np.hstack((np.array([1./(2*taille)]), wts, np.array([1./(2*taille)])))
-        delay = (wts.shape[0]-1) / 2
 
         # predict!
         pred = dict()
@@ -55,7 +55,11 @@ if __name__ == '__main__':
                 pred[id] = y_hat_smooth
 
         # save predictions
-        pred_file = 'RNN_test/' + basename + '/smoothed_predictions_test_set_baseline_%dfeatures_58songs_normed.pkl'%(nb_features)
+        if doSmoothing:
+            pred_file = 'RNN_test/' + basename + '/smoothed_predictions_test_set_baseline_%dfeatures_58songs_normed.pkl'%(nb_features)
+        else:
+            pred_file = 'RNN_test/' + basename + '/predictions_test_set_baseline_%dfeatures_58songs_normed.pkl'%(nb_features)
+
         pickle.dump( pred, open( pred_file, 'wb' ) )
         print ' ... --> saved to: ** %s **'%(pred_file)
 
