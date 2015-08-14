@@ -402,7 +402,7 @@ class dA(object):
         return numpy.mean(denoising_error)
 
 
-def test_dA(learning_rate=0.1, training_epochs=200,
+def test_dA(learning_rate=0.1, training_epochs=100,
             batch_size=60, output_folder='dA_plots/'):
 
     """
@@ -420,14 +420,13 @@ def test_dA(learning_rate=0.1, training_epochs=200,
 
     """
     cost_type = 'MSE'
-#    noise_type = 'gaussian'
-    noise_type = 'binomial'
-    corruption_level=0.1
-    n_hidden=200
+    noise_type = 'gaussian'
+    corruption_level=0.3
+    n_hidden=500
 
     NUM_FRAMES = 60
-    DATADIR = '/baie/corpus/emoMusic/train/'
-    # DATADIR = './train/'
+    # DATADIR = '/baie/corpus/emoMusic/train/'
+    DATADIR = './train/'
     fold_id = 0
     for fold_id in range(0,10):
         print '... loading FOLD %d'%fold_id

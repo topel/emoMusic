@@ -2,12 +2,14 @@ __author__ = 'thomas'
 
 import cPickle as pickle
 import rnn_model
+import numpy as np
 
 if __name__ == '__main__':
 
-    doUseEssentiaFeatures = True
-    runFirstModel = False
-    runSecondModel = True
+    doUseEssentiaFeatures = False
+    runFirstModel = True
+    runSecondModel = False
+    doSmoothing = True
 
     if doUseEssentiaFeatures:
         nb_features = 268
@@ -15,6 +17,7 @@ if __name__ == '__main__':
         nb_features = 260
 
     print '... using %d features ...'%(nb_features)
+    print '... smoothing preds: %s ...'%(doSmoothing)
 
     if runFirstModel:
         # load the test dataset
@@ -28,18 +31,33 @@ if __name__ == '__main__':
         model = rnn_model.MetaRNN()
         model.load( model_file )
 
+        # smooth prediction params
+        taille = 12
+        wts = np.ones(taille-1)*1./taille
+        wts = np.hstack((np.array([1./(2*taille)]), wts, np.array([1./(2*taille)])))
+        delay = (wts.shape[0]-1) / 2
+
         # predict!
         pred = dict()
         for id, v in test_data.iteritems():
             X = v['X']
             print id, X.shape
             pred[id] = model.predict(X)
+            if doSmoothing:
+                y_hat = np.array(pred[id], dtype=float)
+                y_hat_smooth = np.zeros_like(y_hat, dtype=float)
+                y_hat_smooth[:, 0] = np.convolve(y_hat[:, 0], wts, mode='same')
+                y_hat_smooth[:delay, 0] = y_hat[:delay, 0]
+                y_hat_smooth[-delay:, 0] = y_hat[-delay:, 0]
+                y_hat_smooth[:, 1] = np.convolve(y_hat[:, 1], wts, mode='same')
+                y_hat_smooth[:delay, 1] = y_hat[:delay, 1]
+                y_hat_smooth[-delay:, 1] = y_hat[-delay:, 1]
+                pred[id] = y_hat_smooth.tolist()
 
         # save predictions
-        pred_file = 'RNN_test/' + basename + '/predictions_test_set_baseline_%dfeatures_58songs_normed.pkl'%(nb_features)
+        pred_file = 'RNN_test/' + basename + '/smoothed_predictions_test_set_baseline_%dfeatures_58songs_normed.pkl'%(nb_features)
         pickle.dump( pred, open( pred_file, 'wb' ) )
         print ' ... --> saved to: ** %s **'%(pred_file)
-
 
     if runSecondModel:
 

@@ -314,9 +314,9 @@ def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs
 
 if __name__ == '__main__':
 
-    doUseEssentiaFeatures = True
-    doTrainFirstRNN = False
-    doTrainSecondRNN = True
+    doUseEssentiaFeatures = False
+    doTrainFirstRNN = True
+    doTrainSecondRNN = False
 
     if doUseEssentiaFeatures:
         nb_features = 268

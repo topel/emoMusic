@@ -1,7 +1,7 @@
 __author__ = 'thomas'
 
 import rnn_model
-import rnn_model2
+# import rnn_model2
 
 import numpy as np
 import cPickle as pickle
@@ -119,6 +119,11 @@ def rnn_cv( folds, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.
 
     print '... output dir: %s'%(MODELDIR)
 
+    taille = 12
+    wts = np.ones(taille-1)*1./taille
+    wts = np.hstack((np.array([1./(2*taille)]), wts, np.array([1./(2*taille)])))
+    delay = (wts.shape[0]-1) / 2
+
     # # initialize global logger variable
     # print '... initializing global logger variable'
     # logger = logging.getLogger(__name__)
@@ -141,18 +146,19 @@ def rnn_cv( folds, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.
         # print '... loading FOLD %d'%fold_id
         # if useEssentia:
             # fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed_essentia.pkl'%(fold_id), "rb" ) )
-        X_train = fold['train']['X']
-        y_train = fold['train']['y']
-        id_train = fold['train']['song_id']
 
-        X_test = fold['test']['X']
-        y_test = fold['test']['y']
-        id_test = fold['test']['song_id']
+        # X_train = fold['train']['X']
+        # y_train = fold['train']['y']
+        # id_train = fold['train']['song_id']
+        #
+        # X_test = fold['test']['X']
+        # y_test = fold['test']['y']
+        # id_test = fold['test']['song_id']
 
         # else:
         #     # fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )
-        #     X_train, y_train, id_train = load_X_from_fold_to_3dtensor(fold, 'train', NUM_OUTPUT)
-        #     X_test, y_test, id_test = load_X_from_fold_to_3dtensor(fold, 'test', NUM_OUTPUT)
+        X_train, y_train, id_train = load_X_from_fold_to_3dtensor(fold, 'train', NUM_OUTPUT)
+        X_test, y_test, id_test = load_X_from_fold_to_3dtensor(fold, 'test', NUM_OUTPUT)
 
 
         print X_train.shape, y_train.shape, X_test.shape, y_test.shape
@@ -251,7 +257,20 @@ def rnn_cv( folds, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.
             pred.append(model.predict(X_test[ind_seq_test]))
 
         y_hat = np.array(pred, dtype=float)
+
+        # smooooooth
+        y_hat_smooth = np.zeros_like(y_hat, dtype=float)
+        for i in xrange(y_hat.shape[0]):
+            y_hat_smooth[i, :, 0] = np.convolve(y_hat[i, :, 0], wts, mode='same')
+            y_hat_smooth[i, :delay, 0] = y_hat[i, :delay, 0]
+            y_hat_smooth[i, -delay:, 0] = y_hat[i, -delay:, 0]
+            y_hat_smooth[i, :, 1] = np.convolve(y_hat[i, :, 1], wts, mode='same')
+            y_hat_smooth[i, :delay, 1] = y_hat[i, :delay, 1]
+            y_hat_smooth[i, -delay:, 1] = y_hat[i, -delay:, 1]
+
+
         y_hat = np.reshape(y_hat, (y_hat.shape[0]*y_hat.shape[1], y_hat.shape[2]))
+        y_hat_smooth = np.reshape(y_hat_smooth, (y_hat_smooth.shape[0]*y_hat_smooth.shape[1], y_hat_smooth.shape[2]))
 
         y_test_concat = np.reshape(y_test, (y_test.shape[0]*y_test.shape[1], y_test.shape[2]))
 
@@ -259,10 +278,11 @@ def rnn_cv( folds, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.
 
         assert y_hat.shape == y_test_concat.shape, 'ERROR: pred and ref shapes are different!'
 
-        all_fold_pred.append(y_hat.tolist())
+        all_fold_pred.append(y_hat_smooth.tolist())
         all_fold_y_test.append(y_test_concat.tolist())
 
-        RMSE, pcorr, error_per_song, mean_per_song = evaluate(y_test_concat, y_hat, id_test.shape[0])
+        # RMSE, pcorr, error_per_song, mean_per_song = evaluate(y_test_concat, y_hat, id_test.shape[0])
+        RMSE, pcorr, error_per_song, mean_per_song = evaluate(y_test_concat, y_hat_smooth, id_test.shape[0])
 
         s = (
                 'fold: %d valence: %.4f %.4f arousal: %.4f %.4f\n'
@@ -374,8 +394,8 @@ if __name__ == '__main__':
 
     NUM_FRAMES = 60
     NUM_OUTPUT = 2
-    DATADIR = '/baie/corpus/emoMusic/train/'
-    # DATADIR = './train/'
+    # DATADIR = '/baie/corpus/emoMusic/train/'
+    DATADIR = './train/'
 
     useEssentia = False
     if useEssentia:
@@ -447,24 +467,24 @@ if __name__ == '__main__':
 
 
     else:
-        # rmse, pcorr, pvalue = rnn_cv(folds, n_hidden, n_epochs, lr, lrd, reg_coef)
+        rmse, pcorr, pvalue = rnn_cv(folds, n_hidden, n_epochs, lr, lrd, reg_coef)
 
-        retrait_log_file_name = 'retrait_baseline_features.log'
-        retrait_log_file = open(retrait_log_file_name, 'w')
-
-        # feature_indices_list = [[14, 16], [76, 132], [202, 232]]
-        feature_indices_list = [[84, 130]]
-        # for retrait in range(len(baseline_feat_indices)):
-        #     feature_indices_list = list()
-        #     feature_indices_list.append(baseline_feat_indices[retrait])
-        new_folds = remove_features(folds, feature_indices_list)
-        rmse, pcorr, pvalues = rnn_cv(new_folds, n_hidden, n_epochs, lr, lrd, reg_coef)
-        s = (
-        'allfolds valence: %.4f %.4f arousal: %.4f %.4f deb:%d, fin:%d p_values: %.3f %.3f\n'
-          % (rmse[0], pcorr[0][0], rmse[1], pcorr[1][0], feature_indices_list[0][0], feature_indices_list[0][1], pvalues[0], pvalues[1])
-        )
-        print s
-        retrait_log_file.write(s)
-
-        retrait_log_file.close()
+        # retrait_log_file_name = 'retrait_baseline_features.log'
+        # retrait_log_file = open(retrait_log_file_name, 'w')
+        #
+        # # feature_indices_list = [[14, 16], [76, 132], [202, 232]]
+        # feature_indices_list = [[84, 130]]
+        # # for retrait in range(len(baseline_feat_indices)):
+        # #     feature_indices_list = list()
+        # #     feature_indices_list.append(baseline_feat_indices[retrait])
+        # new_folds = remove_features(folds, feature_indices_list)
+        # rmse, pcorr, pvalues = rnn_cv(new_folds, n_hidden, n_epochs, lr, lrd, reg_coef)
+        # s = (
+        # 'allfolds valence: %.4f %.4f arousal: %.4f %.4f deb:%d, fin:%d p_values: %.3f %.3f\n'
+        #   % (rmse[0], pcorr[0][0], rmse[1], pcorr[1][0], feature_indices_list[0][0], feature_indices_list[0][1], pvalues[0], pvalues[1])
+        # )
+        # print s
+        # retrait_log_file.write(s)
+        #
+        # retrait_log_file.close()
 
