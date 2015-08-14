@@ -158,6 +158,8 @@ def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs
     wts = np.hstack((np.array([1./(2*taille)]), wts, np.array([1./(2*taille)])))
     delay = (wts.shape[0]-1) / 2
 
+    print '... doSmoothing: %s'%(doSmoothing)
+
     # # initialize global logger variable
     # print '... initializing global logger variable'
     # logger = logging.getLogger(__name__)
@@ -350,8 +352,8 @@ def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs
 if __name__ == '__main__':
 
     doUseEssentiaFeatures = True
-    doTrainFirstRNN = True
-    doTrainSecondRNN = False
+    doTrainFirstRNN = False
+    doTrainSecondRNN = True
     doSmoothing=True # remark: True only for rnn1 and False for rnn2
 
     if doUseEssentiaFeatures:
