@@ -359,7 +359,7 @@ if __name__ == '__main__':
             makedirs(MODELDIR)
         train_data = pickle.load( open( train_file, "rb" ) )
 
-        RMSE, pcorr = rnn_cv(MODELDIR, model_file, predictions, train_data, doSmoothing)
+        RMSE, pcorr = rnn_cv(MODELDIR, model_file, predictions, train_data, doSmoothing=doSmoothing)
 
     if doTrainSecondRNN:
         # train a model with the predictions as features
