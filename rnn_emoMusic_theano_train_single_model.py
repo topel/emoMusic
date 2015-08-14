@@ -338,7 +338,7 @@ if __name__ == '__main__':
     doUseEssentiaFeatures = True
     doTrainFirstRNN = True
     doTrainSecondRNN = False
-    doSmoothing=True # remark: True only for rnn1 and False for rnn2
+    doSmoothing=False # remark: True only for rnn1 and False for rnn2
 
     if doUseEssentiaFeatures:
         nb_features = 268
