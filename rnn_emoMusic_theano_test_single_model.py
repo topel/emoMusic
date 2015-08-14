@@ -7,8 +7,8 @@ import numpy as np
 if __name__ == '__main__':
 
     doUseEssentiaFeatures = True
-    runFirstModel = True
-    runSecondModel = False
+    runFirstModel = False
+    runSecondModel = True
     doSmoothing = True
 
     if doUseEssentiaFeatures:
@@ -67,12 +67,20 @@ if __name__ == '__main__':
 
         # load predictions from rnn1:
         basename = 'rnn1_baseline_%dfeat_nh10_ne50_lr0.001_reg0.01'%(nb_features)
-        pred_file = 'RNN_test/' + basename + '/predictions_test_set_baseline_%dfeatures_58songs_normed.pkl'%(nb_features)
+        if doSmoothing:
+            pred_file = 'RNN_test/' + basename + '/smoothed_predictions_test_set_baseline_%dfeatures_58songs_normed.pkl'%(nb_features)
+        else:
+            pred_file = 'RNN_test/' + basename + '/predictions_test_set_baseline_%dfeatures_58songs_normed.pkl'%(nb_features)
+
         first_pred = pickle.load( open( pred_file, 'rb' ))
 
         # load prediction_as_feature RNN2 model
         basename = 'rnn2_predictions_as_features_rnn1_baseline_%dfeat_nh10_ne50_lr0.001_reg0.01'%(nb_features)
-        model_file = 'RNN_models/' + basename + '/model_baseline_predictions_as_features_431songs_normed.pkl'
+        if doSmoothing:
+            model_file = 'RNN_models/' + basename + '/smoothed_model_baseline_predictions_as_features_431songs_normed.pkl'
+        else:
+            model_file = 'RNN_models/' + basename + '/model_baseline_predictions_as_features_431songs_normed.pkl'
+
         model = rnn_model.MetaRNN()
         model.load( model_file )
 
@@ -82,6 +90,10 @@ if __name__ == '__main__':
             pred2[id] = model.predict(v)
 
         # save predictions
-        pred_file2 = 'RNN_test/' + basename + '/predictions_test_set_baseline_predictions_as_features_58songs_normed.pkl'
+        if doSmoothing:
+            pred_file2 = 'RNN_test/' + basename + '/smoothed_predictions_test_set_baseline_predictions_as_features_58songs_normed.pkl'
+        else:
+            pred_file2 = 'RNN_test/' + basename + '/predictions_test_set_baseline_predictions_as_features_58songs_normed.pkl'
+
         pickle.dump( pred2, open( pred_file2, 'wb' ) )
         print ' ... --> saved to: ** %s **'%(pred_file2)
