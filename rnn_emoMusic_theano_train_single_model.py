@@ -168,9 +168,10 @@ def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs
     perf_file_name = LOGDIR + 'performance.log'
     log_f = open(perf_file_name, 'w')
 
+
     all_fold_pred = list()
     all_fold_y_test = list()
-    all_fold_id_test = list()
+    all_fold_pred_smooth = list()
 
     t0 = time.time()
 
@@ -217,10 +218,13 @@ def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs
         model.save(fpath=model_name)
 
     pred = list()
+    pred_smooth = list()
+
+    for ind_seq_test in xrange(nb_seq_test):
+        pred.append(model.predict(X_test[ind_seq_test]))
 
     if doSmoothing:
         for ind_seq_test in xrange(nb_seq_test):
-
             y_hat = np.array(model.predict(X_test[ind_seq_test]), dtype=float)
             y_hat_smooth = np.zeros_like(y_hat, dtype=float)
             y_hat_smooth[:, 0] = np.convolve(y_hat[:, 0], wts, mode='same')
@@ -229,21 +233,20 @@ def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs
             y_hat_smooth[:, 1] = np.convolve(y_hat[:, 1], wts, mode='same')
             y_hat_smooth[:delay, 1] = y_hat[:delay, 1]
             y_hat_smooth[-delay:, 1] = y_hat[-delay:, 1]
-            pred.append(y_hat_smooth)
-    else:
-        for ind_seq_test in xrange(nb_seq_test):
-            pred.append(model.predict(X_test[ind_seq_test]))
-
+            pred_smooth.append(y_hat_smooth)
 
     y_hat = np.array(pred, dtype=float)
+    y_hat_smooth = np.array(pred_smooth, dtype=float)
 
     # save predictions as 3d tensors
     # pred_file = LOGDIR + 'predictions_train_set_baseline_predictions_as_features_431songs_normed.pkl'
-    pickle.dump( y_hat, open( pred_file, "wb" ) )
+    if doSmoothing:
+        pickle.dump( y_hat_smooth, open( pred_file, "wb" ) )
+    else:
+        pickle.dump( y_hat, open( pred_file, "wb" ) )
     print ' ... predictions saved in: %s'%(pred_file)
 
     y_hat = np.reshape(y_hat, (y_hat.shape[0]*y_hat.shape[1], y_hat.shape[2]))
-
     y_test_concat = np.reshape(y_test, (y_test.shape[0]*y_test.shape[1], y_test.shape[2]))
 
     print y_hat.shape, y_test_concat.shape
@@ -252,7 +255,6 @@ def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs
 
     all_fold_pred.append(y_hat.tolist())
     all_fold_y_test.append(y_test_concat.tolist())
-
 
     RMSE, pcorr, error_per_song, mean_per_song = evaluate(y_test_concat, y_hat, id_test.shape[0])
 
@@ -263,6 +265,18 @@ def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs
     print s
     log_f.write(s)
 
+    if doSmoothing:
+        y_hat_smooth = np.reshape(y_hat_smooth, (y_hat_smooth.shape[0]*y_hat_smooth.shape[1], y_hat_smooth.shape[2]))
+    # all_fold_pred_smooth.append(y_hat_smooth.tolist())
+
+        RMSE, pcorr, error_per_song, mean_per_song = evaluate(y_test_concat, y_hat_smooth, id_test.shape[0])
+
+        s = (
+                'training_data valence: %.4f %.4f arousal: %.4f %.4f\n'
+              % (RMSE[0], pcorr[0][0], RMSE[1], pcorr[1][0])
+        )
+        print s
+        log_f.write(s)
 
     EMO = 'valence'
     doPlot = False
