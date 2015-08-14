@@ -144,13 +144,19 @@ def remove_features(folds, feature_indices_list, NUM_OUTPUT):
     return new_folds
 
 
-def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.01):
+def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.01, doSmoothing=False):
 
     doSaveModel = True
 
     MODELDIR = output_model_dir
     LOGDIR = MODELDIR
     print '... model output dir: %s'%(MODELDIR)
+
+    # smooth prediction params
+    taille = 12
+    wts = np.ones(taille-1)*1./taille
+    wts = np.hstack((np.array([1./(2*taille)]), wts, np.array([1./(2*taille)])))
+    delay = (wts.shape[0]-1) / 2
 
     # # initialize global logger variable
     # print '... initializing global logger variable'
@@ -211,8 +217,23 @@ def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs
         model.save(fpath=model_name)
 
     pred = list()
-    for ind_seq_test in xrange(nb_seq_test):
-        pred.append(model.predict(X_test[ind_seq_test]))
+
+    if doSmoothing:
+        for ind_seq_test in xrange(nb_seq_test):
+
+            y_hat = np.array(model.predict(X_test[ind_seq_test]), dtype=float)
+            y_hat_smooth = np.zeros_like(y_hat, dtype=float)
+            y_hat_smooth[:, 0] = np.convolve(y_hat[:, 0], wts, mode='same')
+            y_hat_smooth[:delay, 0] = y_hat[:delay, 0]
+            y_hat_smooth[-delay:, 0] = y_hat[-delay:, 0]
+            y_hat_smooth[:, 1] = np.convolve(y_hat[:, 1], wts, mode='same')
+            y_hat_smooth[:delay, 1] = y_hat[:delay, 1]
+            y_hat_smooth[-delay:, 1] = y_hat[-delay:, 1]
+            pred.append(y_hat_smooth)
+    else:
+        for ind_seq_test in xrange(nb_seq_test):
+            pred.append(model.predict(X_test[ind_seq_test]))
+
 
     y_hat = np.array(pred, dtype=float)
 
@@ -314,9 +335,10 @@ def rnn_cv( output_model_dir, model_name, pred_file, data, n_hidden=10, n_epochs
 
 if __name__ == '__main__':
 
-    doUseEssentiaFeatures = False
+    doUseEssentiaFeatures = True
     doTrainFirstRNN = True
     doTrainSecondRNN = False
+    doSmoothing=True # remark: True only for rnn1 and False for rnn2
 
     if doUseEssentiaFeatures:
         nb_features = 268
@@ -328,22 +350,32 @@ if __name__ == '__main__':
         train_file = '/baie/corpus/emoMusic/train/pkl/train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
         MODELDIR = 'RNN_models/rnn1_baseline_%dfeat_nh10_ne50_lr0.001_reg0.01/'%(nb_features)
         model_file = 'model_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
-        predictions = MODELDIR + 'predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+        if doSmoothing:
+            predictions = MODELDIR + 'smoothed_predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+        else:
+            predictions = MODELDIR + 'predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
 
         if not path.exists(MODELDIR):
             makedirs(MODELDIR)
         train_data = pickle.load( open( train_file, "rb" ) )
 
-        RMSE, pcorr = rnn_cv(MODELDIR, model_file, predictions, train_data)
+        RMSE, pcorr = rnn_cv(MODELDIR, model_file, predictions, train_data, doSmoothing)
 
     if doTrainSecondRNN:
         # train a model with the predictions as features
         train_file1 = '/baie/corpus/emoMusic/train/pkl/train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
         MODELDIR1 = 'RNN_models/rnn1_baseline_%dfeat_nh10_ne50_lr0.001_reg0.01/'%(nb_features)
         MODELDIR2 = 'RNN_models/rnn2_predictions_as_features_rnn1_baseline_%dfeat_nh10_ne50_lr0.001_reg0.01/'%(nb_features)
-        model_file = 'model_baseline_predictions_as_features_431songs_normed.pkl'
-        predictions1 = MODELDIR1 + 'predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
-        predictions2 = MODELDIR2 + 'predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+
+        if doSmoothing:
+            predictions1 = MODELDIR1 + 'smoothed_predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+            model_file = 'smoothed_model_baseline_predictions_as_features_431songs_normed.pkl'
+            predictions2 = MODELDIR2 + 'smoothed_predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+        else:
+            predictions1 = MODELDIR1 + 'predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+            model_file = 'model_baseline_predictions_as_features_431songs_normed.pkl'
+            predictions2 = MODELDIR2 + 'predictions_train_set_baseline_%dfeatures_431songs_normed.pkl'%(nb_features)
+
 
         if not path.exists(MODELDIR2):
             makedirs(MODELDIR2)
@@ -357,4 +389,4 @@ if __name__ == '__main__':
         train_data2['train']['y'] = train_data1['train']['y']
         train_data2['train']['song_id'] = train_data1['train']['song_id']
 
-        RMSE, pcorr = rnn_cv( MODELDIR2, model_file, predictions2, train_data2 )
+        RMSE, pcorr = rnn_cv( MODELDIR2, model_file, predictions2, train_data2, doSmoothing=False )
