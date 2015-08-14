@@ -4,7 +4,7 @@ import cPickle as pickle
 
 if __name__ == '__main__':
 
-    doUseEssentiaFeatures = True
+    doUseEssentiaFeatures = False
     doTrainFirstRNN = True
     if doTrainFirstRNN:
         doTrainSecondRNN = False
