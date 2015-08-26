@@ -18,7 +18,9 @@ allfolds valence: 0.2604 0.6780 arousal: 0.2527 0.6584
 
 268 features: 260 + 8 features  essentia: [89, 90], [134, 135], [186, 192] : 'flatnessdb_bark', 'flatnessdb_erb', 'spectral_valley'
 allfolds valence: 0.2593 0.6785 arousal: 0.2448 0.6728
-single model:
++ smoothing:
+allfolds valence: 0.2524 0.6974 arousal: 0.2385 0.6917 p-values: 0.0610, 0.0740
+Single model:
 RNN_models/rnn1_baseline_268feat_nh10_ne50_lr0.001_reg0.01/model_baseline_268features_431songs_normed.pkl
 training_data valence: 0.2429 0.7252 arousal: 0.2288 0.7206
 
@@ -29,6 +31,7 @@ RNN_models/rnn2_predictions_as_features_rnn1_baseline_260feat_nh10_ne50_lr0.001_
 training_data valence: 0.2399 0.7343 arousal: 0.2265 0.7266
 RNN_models/rnn2_predictions_as_features_rnn1_baseline_268feat_nh10_ne50_lr0.001_reg0.01/predictions_train_set_baseline_268features_431songs_normed.pkl
 training_data valence: 0.2386 0.7374 arousal: 0.2266 0.7267
+allfolds valence: 0.2492 0.7061 arousal: 0.2378 0.6937 p-values: 0.0044, 0.4306
 
 da rnn
 da_rnn_fold0_costMSE_noisegaussian_level0.1_nh200_it200
