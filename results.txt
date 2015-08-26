@@ -29,3 +29,14 @@ RNN_models/rnn2_predictions_as_features_rnn1_baseline_260feat_nh10_ne50_lr0.001_
 training_data valence: 0.2399 0.7343 arousal: 0.2265 0.7266
 RNN_models/rnn2_predictions_as_features_rnn1_baseline_268feat_nh10_ne50_lr0.001_reg0.01/predictions_train_set_baseline_268features_431songs_normed.pkl
 training_data valence: 0.2386 0.7374 arousal: 0.2266 0.7267
+
+da rnn
+da_rnn_fold0_costMSE_noisegaussian_level0.1_nh200_it200
+allfolds valence: 0.2697 0.6484 arousal: 0.2547 0.6491 p-values: 0.0000, 0.0000
+
+# smoothed predictions with 268 features:
+rnn1 baseline: training_data valence: 0.2429 0.7252 arousal: 0.2288 0.7206
+rnn1 smoothed: training_data valence: 0.2358 0.7449 arousal: 0.2225 0.7392
+
+rnn2 baseline: training_data valence: 0.2386 0.7374 arousal: 0.2266 0.7267
+rnn2 smoothed: training_data valence: 0.2365 0.7431 arousal: 0.2250 0.7316
