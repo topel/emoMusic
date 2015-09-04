@@ -399,7 +399,8 @@ if __name__ == '__main__':
     DATADIR = '/baie/corpus/emoMusic/train/'
     # DATADIR = './train/'
 
-    useEssentia = True
+    useEssentia = False
+
     if useEssentia:
         # nb_features = 196 # essentia features
         nb_features = 268 # 260 baseline features + 8 essentia features
@@ -427,10 +428,10 @@ if __name__ == '__main__':
 
     # test using predictions as features:
     ajout_log_file_name = 'ajout_predictions_as_features_after_smoothing.log'
-    ajout_log_file = open(ajout_log_file_name, 'w')
+    ajout_log_file = open(ajout_log_file_name, 'a')
 
     feature_indices_list = [[0, 2]]
-    train_pred_folds, test_pred_folds = load_prediction_folds('rnn/nfeat268_nh10_ne50_lr0.001_reg0.01_smoothed/')
+    train_pred_folds, test_pred_folds = load_prediction_folds('rnn/nfeat%d_nh10_ne50_lr0.001_reg0.01_smoothed/'%(nb_features))
 
     new_folds = list()
     for fold_id in range(10):

@@ -106,7 +106,7 @@ def remove_features(folds, feature_indices_list):
 
 
 
-def rnn_cv( folds, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.01, doSmoothing=False):
+def rnn_cv( folds, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.01, doSmoothing=False, useEssentia=False):
 
     doSaveModel = False
 
@@ -151,18 +151,19 @@ def rnn_cv( folds, n_hidden=10, n_epochs=50, lr=0.001, lrd = 0.999, reg_coef= 0.
         # if useEssentia:
             # fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed_essentia.pkl'%(fold_id), "rb" ) )
 
-        X_train = fold['train']['X']
-        y_train = fold['train']['y']
-        id_train = fold['train']['song_id']
+        if useEssentia:
+            X_train = fold['train']['X']
+            y_train = fold['train']['y']
+            id_train = fold['train']['song_id']
 
-        X_test = fold['test']['X']
-        y_test = fold['test']['y']
-        id_test = fold['test']['song_id']
+            X_test = fold['test']['X']
+            y_test = fold['test']['y']
+            id_test = fold['test']['song_id']
 
-        # else:
-        #     # fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )
-        # X_train, y_train, id_train = load_X_from_fold_to_3dtensor(fold, 'train', NUM_OUTPUT)
-        # X_test, y_test, id_test = load_X_from_fold_to_3dtensor(fold, 'test', NUM_OUTPUT)
+        else:
+            fold = pickle.load( open( DATADIR + '/pkl/fold%d_normed.pkl'%(fold_id), "rb" ) )
+            X_train, y_train, id_train = load_X_from_fold_to_3dtensor(fold, 'train', NUM_OUTPUT)
+            X_test, y_test, id_test = load_X_from_fold_to_3dtensor(fold, 'test', NUM_OUTPUT)
 
 
         print X_train.shape, y_train.shape, X_test.shape, y_test.shape
@@ -463,7 +464,8 @@ if __name__ == '__main__':
     DATADIR = '/baie/corpus/emoMusic/train/'
     # DATADIR = './train/'
 
-    useEssentia = True
+    useEssentia = False
+
     if useEssentia:
         # nb_features = 196 # essentia features
         nb_features = 268 # 260 baseline features + 8 essentia features
@@ -527,7 +529,7 @@ if __name__ == '__main__':
         feature_indices_list.append([134, 135])
         feature_indices_list.append([186, 192])
         new_folds = add_essentia_features(folds, essentia_folds, feature_indices_list)
-        rmse, pcorr, pvalues = rnn_cv(new_folds, n_hidden, n_epochs, lr, lrd, reg_coef, doSmoothing)
+        rmse, pcorr, pvalues = rnn_cv(new_folds, n_hidden, n_epochs, lr, lrd, reg_coef, doSmoothing, useEssentia)
         s = (
         'allfolds valence: %.4f %.4f arousal: %.4f %.4f deb:%d, fin:%d\n'
           % (rmse[0], pcorr[0][0], rmse[1], pcorr[1][0], feature_indices_list[0][0], feature_indices_list[0][1])
@@ -538,7 +540,7 @@ if __name__ == '__main__':
 
 
     else:
-        rmse, pcorr, pvalue = rnn_cv(folds, n_hidden, n_epochs, lr, lrd, reg_coef, doSmoothing)
+        rmse, pcorr, pvalue = rnn_cv(folds, n_hidden, n_epochs, lr, lrd, reg_coef, doSmoothing, useEssentia)
 
         # retrait_log_file_name = 'retrait_baseline_features.log'
         # retrait_log_file = open(retrait_log_file_name, 'w')
