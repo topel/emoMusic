@@ -1,12 +1,12 @@
 __author__ = 'thomas'
 
 import cPickle as pickle
-# input = '/baie/corpus/emoMusic/test/pkl/test_set_baseline_268features_58songs_normed.pkl'
-# output = '/baie/corpus/emoMusic/test/test_set_baseline_268features_58songs_normed.arff'
-input = '/baie/corpus/emoMusic/train/pkl/train_set_baseline_268features_431songs_normed.pkl'
-output = '/baie/corpus/emoMusic/train/train_set_baseline_268features_431songs_normed.arff'
+input = '/baie/corpus/emoMusic/test/pkl/test_set_baseline_268features_58songs_normed.pkl'
+output = '/baie/corpus/emoMusic/test/test_set_baseline_268features_58songs_normed.arff'
+# input = '/baie/corpus/emoMusic/train/pkl/train_set_baseline_268features_431songs_normed.pkl'
+# output = '/baie/corpus/emoMusic/train/train_set_baseline_268features_431songs_normed.arff'
 
-isTest = False
+isTest = True
 
 data = pickle.load( open( input, "rb" ) )
 
