@@ -33,8 +33,8 @@ with open(output, 'w') as f:
     if isTest:
     # print header
         for id, v in data.iteritems():
-            for i in range(v['X'].shape[0]):
-                temps = 15. + i * 0.5
+            for i in range(30, v['X'].shape[0], 1):
+                temps = i * 0.5
                 s = '%s,%.1f,'%(id, temps)
                 s += ','.join(map(str, v['X'][i,-8:]))
                 s += '\n'

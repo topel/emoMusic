@@ -37,6 +37,8 @@ valence3s = load_sub(indir + '/3/' + 'me15em_IRIT-SAMOVA_rnn268featSmoothed_vale
 valence4 = load_sub(indir + '/4/' + 'me15em_IRIT-SAMOVA_rnn2x268feat_valence.csv')
 # print valence4[song][0:20]
 
+valence4s = load_sub(indir + '/4/' + 'me15em_IRIT-SAMOVA_rnn2x268featSmoothed_valence.csv')
+
 valence5 = dict()
 for s in valence2:
     v1 = np.array(valence2[s], dtype=float)
@@ -46,11 +48,12 @@ for s in valence2:
 
 fig, ax = plt.subplots()
 ax.plot(valence1[song], 'k', label='1')
-ax.plot(valence1s[song], 'rx', label='1 S')
+ax.plot(valence1s[song], 'r', label='1 S')
 # ax.plot(valence2[song], 'r', label='2')
-ax.plot(valence3[song], 'b', label='3')
-ax.plot(valence3s[song], 'g', label='3 S')
-# ax.plot(valence4[song], 'g', label='4')
+# ax.plot(valence3[song], 'b', label='3')
+# ax.plot(valence3s[song], 'g', label='3 S')
+ax.plot(valence4[song], 'g', label='4')
+ax.plot(valence4s[song], 'b', label='4 S')
 # ax.plot(valence5[song], 'y', label='5')
 legend = ax.legend(loc='upper right', shadow=True)
 plt.show()
