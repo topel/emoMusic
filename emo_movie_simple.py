@@ -21,12 +21,12 @@ print duration
 ar = np.array(arousal[song])
 val = np.array(valence[song])
 
-line, = ax.plot(x, ar[x])
-line_val, = ax.plot(x, val[x])
+line, = ax.plot(x, ar[x], 'go-', linewidth=5)
+line_val, = ax.plot(x, val[x], 'ro-', linewidth=5)
 plt.ylim([-1., 1.])
 
 def animate(i):
-    print i, x+i
+#    print i, x+i
     line.set_ydata(ar[x+i])  # update the data
     line_val.set_ydata(val[x+i])  # update the data
     return line, line_val,
